@@ -22,18 +22,18 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ]]
 
-local relpath = (...):gsub('%.[^%.]+$', '')
+local relpath = (...):gsub("%.[^%.]+$", "")
 local Serializer = {}
 
 function Serializer.pack()
   if string.pack then
     return string.pack
   end
-  local ok, _ = pcall(require, 'struct')
+  local ok, _ = pcall(require, "struct")
   if ok then
-    return require'struct'.pack
+    return require("struct").pack
   else
-    return require(relpath .. '.lib.struct').pack
+    return require(relpath .. ".lib.struct").pack
   end
 end
 
@@ -41,11 +41,11 @@ function Serializer.unpack()
   if string.unpack then
     return string.unpack
   end
-  local ok, _ = pcall(require, 'struct')
+  local ok, _ = pcall(require, "struct")
   if ok then
-    return require'struct'.unpack
+    return require("struct").unpack
   else
-    return require(relpath .. '.lib.struct').unpack
+    return require(relpath .. ".lib.struct").unpack
   end
 end
 

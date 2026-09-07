@@ -22,10 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ]]
 
-local relpath = (...):gsub('%.[^%.]+$', '')
-local Types = require(relpath .. '.types')
-local Message = require(relpath .. '.message')
-local Timetag = require(relpath .. '.timetag')
+local relpath = (...):gsub("%.[^%.]+$", "")
+local Types = require(relpath .. ".types")
+local Message = require(relpath .. ".message")
+local Timetag = require(relpath .. ".timetag")
 
 local Bundle = {}
 Bundle.__index = Bundle
@@ -33,7 +33,7 @@ Bundle.__index = Bundle
 local ts = Timetag.get_timestamp
 
 local function _pack(bundle, packet)
-  packet[#packet + 1] = Types.pack.s('#bundle')
+  packet[#packet + 1] = Types.pack.s("#bundle")
   packet[#packet + 1] = Types.pack.t(bundle.timetag)
   for _, item in ipairs(bundle) do
     if item.address and item.types then
@@ -42,14 +42,14 @@ local function _pack(bundle, packet)
       packet[#packet + 1] = message
     elseif item.timetag then
       if ts(item.timetag) < ts(bundle.timetag) then
-        error('Bundle timetag is less than enclosing bundle.')
+        error("Bundle timetag is less than enclosing bundle.")
       end
       local bndl = Bundle.pack(item)
       packet[#packet + 1] = Types.pack.i(#bndl)
       packet[#packet + 1] = bndl
     end
   end
-  return table.concat(packet, '')
+  return table.concat(packet, "")
 end
 
 local function _unpack(data, bundle, offset, length)
@@ -61,10 +61,10 @@ local function _unpack(data, bundle, offset, length)
   while offset < length do
     value, offset = Types.unpack.i(data, offset)
     local head = data:sub(offset, offset)
-    if head == '#' then
+    if head == "#" then
       value, offset = _unpack(data, {}, offset, offset + value - 1)
       bundle[#bundle + 1] = value
-    elseif head == '/' then
+    elseif head == "/" then
       value, offset = Message.unpack(data, offset)
       bundle[#bundle + 1] = value
     end
@@ -74,7 +74,7 @@ end
 
 function Bundle.new(...)
   local self = setmetatable({}, Bundle)
-  local args = {...}
+  local args = { ... }
   self.content = {}
   if #args >= 1 then
     self.content.timetag = args[1].content
@@ -99,24 +99,24 @@ end
 
 function Bundle.validate(bundle)
   assert(bundle)
-  if type(bundle) == 'string' then
+  if type(bundle) == "string" then
     Bundle.bytes_validate(bundle)
-  elseif type(bundle) == 'table' then
+  elseif type(bundle) == "table" then
     Bundle.tbl_validate(bundle.content or bundle)
   end
 end
 
 function Bundle.tbl_validate(tbl)
-  assert(type(tbl.timetag) == 'table', 'Missing OSC Timetag.')
+  assert(type(tbl.timetag) == "table", "Missing OSC Timetag.")
 end
 
 function Bundle.bytes_validate(data, offset)
   local value
-  assert(#data % 4 == 0, 'OSC bundle data must be a multiple of 4.')
+  assert(#data % 4 == 0, "OSC bundle data must be a multiple of 4.")
   value, offset = Types.unpack.s(data, offset or 1)
-  assert(value == '#bundle', 'Missing bundle marker')
+  assert(value == "#bundle", "Missing bundle marker")
   value = Types.unpack.t(data, offset)
-  assert(type(value) == 'table', 'Missing bundle timetag')
+  assert(type(value) == "table", "Missing bundle timetag")
 end
 
 function Bundle.pack(tbl)

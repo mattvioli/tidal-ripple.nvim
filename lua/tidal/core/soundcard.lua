@@ -41,12 +41,12 @@ function M.select(cards, callback)
 
   vim.ui.select(items, {
     prompt = "Select soundcard for Jackd:",
-  }, function(choice, _idx)
+  }, function(choice, idx)
     if not choice then
       callback(nil)
       return
     end
-    callback(cards[_idx].name)
+    callback(cards[idx].name)
   end)
 end
 
@@ -57,16 +57,24 @@ function M.launch_jackd(card_name)
   while attempt <= max_attempts do
     if attempt > 1 then
       notify.info(string.format("[jackd] retrying (attempt %d/%d)...", attempt, max_attempts))
-      vim.wait(2000, function() return false end, 50)
+      vim.wait(2000, function()
+        return false
+      end, 50)
     end
 
     vim.fn.system("jack_control stop 2>/dev/null; true")
     vim.fn.system("pkill -x jackd 2>/dev/null; true")
-    vim.wait(500, function() return false end, 50)
+    vim.wait(500, function()
+      return false
+    end, 50)
 
     local ok = pcall(function()
       local job_id = vim.fn.jobstart({
-        "jackd", "-d", "alsa", "-d", "hw:" .. card_name,
+        "jackd",
+        "-d",
+        "alsa",
+        "-d",
+        "hw:" .. card_name,
       }, {
         detach = true,
         on_stderr = function(_, data)

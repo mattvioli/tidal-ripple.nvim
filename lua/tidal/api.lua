@@ -374,25 +374,25 @@ end
 
 function M.looper_record()
   local orbit = vim.v.count > 0 and vim.v.count or 1
-  message.tidal.send_line(string.format("d%d $ s \"rlooper\"", orbit))
+  message.tidal.send_line(string.format('d%d $ s "rlooper"', orbit))
 end
 
 function M.looper_overdub()
   local orbit = vim.v.count > 0 and vim.v.count or 1
-  message.tidal.send_line(string.format("d%d $ s \"olooper\"", orbit))
+  message.tidal.send_line(string.format('d%d $ s "olooper"', orbit))
 end
 
 function M.looper_free()
   local buf = vim.v.count
   if buf > 0 then
-    message.tidal.send_line(string.format("once $ s \"freeLoops\" # n \"%d\"", buf))
+    message.tidal.send_line(string.format('once $ s "freeLoops" # n "%d"', buf))
   else
     M.looper_free_all()
   end
 end
 
 function M.looper_free_all()
-  message.tidal.send_line("once $ s \"freeLoops\"")
+  message.tidal.send_line('once $ s "freeLoops"')
 end
 
 function M.looper_set_mode(mode)
@@ -422,7 +422,7 @@ end
 
 function M.looper_persist()
   local name = vim.v.count > 0 and tostring(vim.v.count) or config.options.boot.looper.default_name or "loop"
-  message.tidal.send_line(string.format("once $ s \"persistLoops\" # lname \"%s\"", name))
+  message.tidal.send_line(string.format('once $ s "persistLoops" # lname "%s"', name))
 end
 
 function M.looper_set_input(port)

@@ -19,15 +19,13 @@ end
 
 local function get_highlight_group()
   return config.options.event_highlight
-    and config.options.event_highlight.highlight
-    and config.options.event_highlight.highlight.link
+      and config.options.event_highlight.highlight
+      and config.options.event_highlight.highlight.link
     or DEFAULT_HL
 end
 
 local function get_fade_ms()
-  return config.options.event_highlight
-    and config.options.event_highlight.fade_ms
-    or DEFAULT_FADE_MS
+  return config.options.event_highlight and config.options.event_highlight.fade_ms or DEFAULT_FADE_MS
 end
 
 local function clear_flash(key)
@@ -60,14 +58,18 @@ local function apply_flash(bufnr, line, key, duration)
 
   local timer = vim.uv.new_timer()
   flash_timers[key] = timer
-  timer:start(duration, 0, vim.schedule_wrap(function()
-    if flash_timers[key] == timer then
-      flash_timers[key] = nil
-    end
-    if vim.api.nvim_buf_is_valid(bufnr) then
-      vim.api.nvim_buf_clear_namespace(bufnr, ns, row, row + 1)
-    end
-  end))
+  timer:start(
+    duration,
+    0,
+    vim.schedule_wrap(function()
+      if flash_timers[key] == timer then
+        flash_timers[key] = nil
+      end
+      if vim.api.nvim_buf_is_valid(bufnr) then
+        vim.api.nvim_buf_clear_namespace(bufnr, ns, row, row + 1)
+      end
+    end)
+  )
 end
 
 function M.on_event(parsed)

@@ -43,15 +43,17 @@ local function start_sclang(opts, split)
   state.sclang:start(win_opts)
   state.sclang_buf = state.sclang.buf.bufnr
   state.sclang_win = state.sclang.win_id
-  state.sclang:send_line('s.options.numWireBufs = 128;')
-  state.sclang:send_line('s.options.numAudioBusChannels = 2048;')
+  state.sclang:send_line("s.options.numWireBufs = 128;")
+  state.sclang:send_line("s.options.numAudioBusChannels = 2048;")
   state.sclang:send_line('s.options.device = "JACK";')
 
   local looper = config.options.boot.looper
   if looper and looper.enabled then
     local looper_file = vim.api.nvim_get_runtime_file("bootfiles/Looper.scd", false)[1]
     if looper_file then
-      state.sclang:send_line(string.format([[
+      state.sclang:send_line(
+        string.format(
+          [[
 s.waitForBoot {
   ~dirt = SuperDirt(2, s);
   ~numBuffers = %d;
@@ -65,15 +67,16 @@ s.waitForBoot {
   "%s".load;
 };
 ]],
-        looper.num_buffers or 8,
-        looper.default_input or 0,
-        looper.default_name or "loop",
-        looper.persist_path or "~/Music/Loops/",
-        looper.p_level or 0.0,
-        looper.r_level or 2.5,
-        looper.debug_mode and "true" or "false",
-        looper_file:gsub("\\", "\\\\"):gsub('"', '\\"')
-      ))
+          looper.num_buffers or 8,
+          looper.default_input or 0,
+          looper.default_name or "loop",
+          looper.persist_path or "~/Music/Loops/",
+          looper.p_level or 0.0,
+          looper.r_level or 2.5,
+          looper.debug_mode and "true" or "false",
+          looper_file:gsub("\\", "\\\\"):gsub('"', '\\"')
+        )
+      )
     else
       notify.warn("Looper enabled but Looper.scd not found; falling back to normal boot")
       local file = vim.fn.expand(opts.file)

@@ -53,7 +53,6 @@ local function lex(str)
     elseif c == "(" then
       local close = str:find(")", i)
       if close then
-        local inner = str:sub(i + 1, close - 1)
         table.insert(tokens, { type = "euclid", value = str:sub(i, close), start = i, finish = close })
         i = close + 1
       else
@@ -81,11 +80,24 @@ local function lex(str)
     elseif c == "%" then
       table.insert(tokens, { type = "percent", value = "%", start = i, finish = i })
       i = i + 1
-    elseif c == "0" or c == "1" or c == "2" or c == "3" or c == "4"
-        or c == "5" or c == "6" or c == "7" or c == "8" or c == "9"
-        or c == "-" or c == "." then
+    elseif
+      c == "0"
+      or c == "1"
+      or c == "2"
+      or c == "3"
+      or c == "4"
+      or c == "5"
+      or c == "6"
+      or c == "7"
+      or c == "8"
+      or c == "9"
+      or c == "-"
+      or c == "."
+    then
       local num_start = i
-      if c == "-" then i = i + 1 end
+      if c == "-" then
+        i = i + 1
+      end
       while i <= #str and (str:sub(i, i):match("[0-9.]")) do
         i = i + 1
       end
@@ -122,7 +134,9 @@ function M.get_context(str, cursor_pos)
       elseif tok.type == "colon" then
         local prev = nil
         for _, t in ipairs(tokens) do
-          if t == tok then break end
+          if t == tok then
+            break
+          end
           prev = t
         end
         return { type = "index", sample = prev and prev.value, tokens = tokens }
@@ -139,7 +153,9 @@ function M.get_context(str, cursor_pos)
 end
 
 function M.extract_sample_names(str)
-  if not str then return {} end
+  if not str then
+    return {}
+  end
   local names = {}
   local tokens = lex(str)
   for _, tok in ipairs(tokens) do
@@ -158,7 +174,9 @@ function M.extract_sample_names(str)
 end
 
 function M.extract_sample_indices(str)
-  if not str then return {} end
+  if not str then
+    return {}
+  end
   local indices = {}
   local tokens = lex(str)
   for i, tok in ipairs(tokens) do

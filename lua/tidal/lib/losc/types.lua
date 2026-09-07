@@ -22,9 +22,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ]]
 
-local relpath = (...):gsub('%.[^%.]+$', '')
-local Serializer = require(relpath .. '.serializer')
-local Timetag = require(relpath .. '.timetag')
+local relpath = (...):gsub("%.[^%.]+$", "")
+local Serializer = require(relpath .. ".serializer")
+local Timetag = require(relpath .. ".timetag")
 
 local _pack = Serializer.pack()
 local _unpack = Serializer.unpack()
@@ -36,14 +36,14 @@ Types.pack = {}
 setmetatable(Types.pack, {
   __call = function(self, type, value)
     return pcall(self[type], value)
-  end
+  end,
 })
 
 Types.unpack = {}
 setmetatable(Types.unpack, {
   __call = function(self, type, data, offset)
     return pcall(self[type], data, offset)
-  end
+  end,
 })
 
 function Types.get(tbl)
@@ -63,58 +63,58 @@ local function blobsize(b)
 end
 
 Types.pack.i = function(value)
-  return _pack('>i4', value)
+  return _pack(">i4", value)
 end
 
 Types.unpack.i = function(data, offset)
-  return _unpack('>i4', data, offset)
+  return _unpack(">i4", data, offset)
 end
 
 Types.pack.f = function(value)
-  return _pack('>f', value)
+  return _pack(">f", value)
 end
 
 Types.unpack.f = function(data, offset)
-  return _unpack('>f', data, offset)
+  return _unpack(">f", data, offset)
 end
 
 Types.pack.s = function(value)
   local len = strsize(value)
-  local fmt = 'c' .. len
+  local fmt = "c" .. len
   value = value .. string.rep(string.char(0), len - #value)
-  return _pack('>' .. fmt, value)
+  return _pack(">" .. fmt, value)
 end
 
 Types.unpack.s = function(data, offset)
-  local fmt = has_string_pack and 'z' or 's'
-  local str = _unpack('>' .. fmt, data, offset)
+  local fmt = has_string_pack and "z" or "s"
+  local str = _unpack(">" .. fmt, data, offset)
   return str, strsize(str) + (offset or 1)
 end
 
 Types.pack.b = function(value)
   local size = #value
   local aligned = blobsize(value)
-  local fmt = 'c' .. aligned
+  local fmt = "c" .. aligned
   value = value .. string.rep(string.char(0), aligned - size)
-  return _pack('>I4' .. fmt, size, value)
+  return _pack(">I4" .. fmt, size, value)
 end
 
 Types.unpack.b = function(data, offset)
   local size, blob
-  size, offset = _unpack('>I4', data, offset)
-  blob, offset = _unpack('>c' .. size, data, offset)
+  size, offset = _unpack(">I4", data, offset)
+  blob, offset = _unpack(">c" .. size, data, offset)
   return blob, offset + blobsize(blob) - size
 end
 
 if has_string_pack then
   Types.pack.h = function(value)
-    return _pack('>i8', value)
+    return _pack(">i8", value)
   end
 end
 
 if has_string_pack then
   Types.unpack.h = function(data, offset)
-    return _unpack('>i8', data, offset)
+    return _unpack(">i8", data, offset)
   end
 end
 
@@ -127,11 +127,11 @@ Types.unpack.t = function(data, offset)
 end
 
 Types.pack.d = function(value)
-  return _pack('>d', value)
+  return _pack(">d", value)
 end
 
 Types.unpack.d = function(data, offset)
-  return _unpack('>d', data, offset)
+  return _unpack(">d", data, offset)
 end
 
 Types.unpack.T = function(_, offset)

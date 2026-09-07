@@ -22,8 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ]]
 
-local relpath = (...):gsub('%.[^%.]+$', '')
-local Serializer = require(relpath .. '.serializer')
+local relpath = (...):gsub("%.[^%.]+$", "")
+local Serializer = require(relpath .. ".serializer")
 local _pack = Serializer.pack()
 local _unpack = Serializer.unpack()
 
@@ -43,24 +43,24 @@ end
 Timetag.__index = Timetag
 
 Timetag.__add = function(a, b)
-  if type(a) == 'number' then
+  if type(a) == "number" then
     return tt_add(b, a)
   end
-  if type(b) == 'number' then
+  if type(b) == "number" then
     return tt_add(a, b)
   end
 end
 
 function Timetag.new_raw(...)
   local self = setmetatable({}, Timetag)
-  local args = {...}
-  self.content = {seconds = 0, fractions = 1}
+  local args = { ... }
+  self.content = { seconds = 0, fractions = 1 }
   if #args >= 1 then
-    if type(args[1]) == 'table' then
+    if type(args[1]) == "table" then
       self.content = args[1]
-    elseif type(args[1]) == 'number' and not args[2] then
+    elseif type(args[1]) == "number" and not args[2] then
       self.content.seconds = args[1]
-    elseif type(args[1]) == 'number' and type(args[2]) == 'number' then
+    elseif type(args[1]) == "number" and type(args[2]) == "number" then
       self.content.seconds = args[1]
       self.content.fractions = args[2]
     end
@@ -107,16 +107,16 @@ end
 
 function Timetag.pack(tbl)
   local data = {}
-  data[#data + 1] = _pack('>I4', tbl.seconds)
-  data[#data + 1] = _pack('>I4', tbl.fractions)
-  return table.concat(data, '')
+  data[#data + 1] = _pack(">I4", tbl.seconds)
+  data[#data + 1] = _pack(">I4", tbl.fractions)
+  return table.concat(data, "")
 end
 
 function Timetag.unpack(data, offset)
   local seconds, fractions
-  seconds, offset = _unpack('>I4', data, offset)
-  fractions, offset = _unpack('>I4', data, offset)
-  return {seconds = seconds, fractions = fractions}, offset
+  seconds, offset = _unpack(">I4", data, offset)
+  fractions, offset = _unpack(">I4", data, offset)
+  return { seconds = seconds, fractions = fractions }, offset
 end
 
 return Timetag

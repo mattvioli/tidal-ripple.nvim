@@ -54,24 +54,43 @@ local function setup_user_commands()
   end, { nargs = "?", desc = "Silence a Tidal pattern (default: d0)" })
 
   vim.api.nvim_create_user_command("TidalOSCToggle", api.toggle_osc, { desc = "Toggle OSC listener" })
-  vim.api.nvim_create_user_command("TidalVisualizerToggle", api.toggle_visualizer, { desc = "Toggle visualizer floating window" })
+  vim.api.nvim_create_user_command("TidalVisualizerToggle", api.toggle_visualizer, {
+    desc = "Toggle visualizer floating window",
+  })
   vim.api.nvim_create_user_command("TidalTapTempo", api.toggle_taptempo, { desc = "Toggle tap tempo mode" })
   vim.api.nvim_create_user_command("TidalTapTempoReset", api.reset_taps, { desc = "Reset tap tempo history" })
 
-  vim.api.nvim_create_user_command("TidalLooperRecord", api.looper_record, { desc = "Record loop (count = orbit, default d1)" })
-  vim.api.nvim_create_user_command("TidalLooperOverdub", api.looper_overdub, { desc = "Overdub loop (count = orbit, default d1)" })
-  vim.api.nvim_create_user_command("TidalLooperFree", api.looper_free, { desc = "Free loop buffer (count = buffer number)" })
+  vim.api.nvim_create_user_command("TidalLooperRecord", api.looper_record, {
+    desc = "Record loop (count = orbit, default d1)",
+  })
+  vim.api.nvim_create_user_command("TidalLooperOverdub", api.looper_overdub, {
+    desc = "Overdub loop (count = orbit, default d1)",
+  })
+  vim.api.nvim_create_user_command("TidalLooperFree", api.looper_free, {
+    desc = "Free loop buffer (count = buffer number)",
+  })
   vim.api.nvim_create_user_command("TidalLooperFreeAll", api.looper_free_all, { desc = "Free all loop buffers" })
-  vim.api.nvim_create_user_command("TidalLooperPersist", api.looper_persist, { desc = "Persist loops to disk (count = name)" })
+  vim.api.nvim_create_user_command("TidalLooperPersist", api.looper_persist, {
+    desc = "Persist loops to disk (count = name)",
+  })
   vim.api.nvim_create_user_command("TidalLooperMode", function(opts)
     api.looper_set_mode(opts.args)
-  end, { nargs = 1, complete = "customlist,v:lua.require'tidal.api'.looper_mode_complete", desc = "Set looper mode: replace|overdub" })
+  end, {
+    nargs = 1,
+    complete = "customlist,v:lua.require'tidal.api'.looper_mode_complete",
+    desc = "Set looper mode: replace|overdub",
+  })
+
   vim.api.nvim_create_user_command("TidalLooperInput", function(opts)
     api.looper_set_input(tonumber(opts.args))
   end, { nargs = 1, desc = "Set looper input port" })
 
-  vim.api.nvim_create_user_command("TidalSampleBrowser", api.toggle_sample_browser, { desc = "Toggle sample bank browser" })
-  vim.api.nvim_create_user_command("TidalSampleInvestigate", api.investigate_sample, { desc = "Investigate sample bank under cursor" })
+  vim.api.nvim_create_user_command("TidalSampleBrowser", api.toggle_sample_browser, {
+    desc = "Toggle sample bank browser",
+  })
+  vim.api.nvim_create_user_command("TidalSampleInvestigate", api.investigate_sample, {
+    desc = "Investigate sample bank under cursor",
+  })
 
   vim.api.nvim_create_user_command("TidalMute", function(opts)
     api.osc_mute(opts.args ~= "" and opts.args or nil)

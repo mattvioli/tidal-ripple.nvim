@@ -15,17 +15,29 @@ local function current_context()
 end
 
 local function prefix_len(ctx)
-  if ctx.type == "sample" or ctx.type == "index" or ctx.type == "param_value"
-    or ctx.type == "keyword" or ctx.type == "param" or ctx.type == "function" then
+  if
+    ctx.type == "sample"
+    or ctx.type == "index"
+    or ctx.type == "param_value"
+    or ctx.type == "keyword"
+    or ctx.type == "param"
+    or ctx.type == "function"
+  then
     return (ctx.prefix or ""):len()
   end
   return 0
 end
 
 local function should_autocomplete(ctx)
-  if not ctx or not ctx.type then return false end
-  if ctx.type == "empty" then return false end
-  if ctx.type == "param" or ctx.type == "function" then return true end
+  if not ctx or not ctx.type then
+    return false
+  end
+  if ctx.type == "empty" then
+    return false
+  end
+  if ctx.type == "param" or ctx.type == "function" then
+    return true
+  end
   if ctx.type == "sample" or ctx.type == "index" or ctx.type == "param_value" then
     return (ctx.prefix or "") ~= ""
   end
@@ -46,7 +58,9 @@ function M.complete(findstart, base)
 
     local col = vim.fn.col(".") - 1
     local startcol = col - prefix_len(ctx)
-    if startcol < 0 then startcol = 0 end
+    if startcol < 0 then
+      startcol = 0
+    end
     return startcol
   end
 
@@ -61,33 +75,51 @@ function M.complete(findstart, base)
 end
 
 local function trigger_omnifunc()
-  if vim.fn.pumvisible() ~= 0 then return end
+  if vim.fn.pumvisible() ~= 0 then
+    return
+  end
   local ctx = current_context()
-  if not should_autocomplete(ctx) then return end
-  if #parser.get_completions(ctx) == 0 then return end
+  if not should_autocomplete(ctx) then
+    return
+  end
+  if #parser.get_completions(ctx) == 0 then
+    return
+  end
   vim.schedule(function()
-    if vim.fn.pumvisible() ~= 0 then return end
+    if vim.fn.pumvisible() ~= 0 then
+      return
+    end
     local scheduled_ctx = current_context()
-    if not should_autocomplete(scheduled_ctx) then return end
-    if #parser.get_completions(scheduled_ctx) == 0 then return end
-    vim.api.nvim_feedkeys(
-      vim.api.nvim_replace_termcodes("<C-x><C-o>", true, false, true),
-      "n",
-      false
-    )
+    if not should_autocomplete(scheduled_ctx) then
+      return
+    end
+    if #parser.get_completions(scheduled_ctx) == 0 then
+      return
+    end
+    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-x><C-o>", true, false, true), "n", false)
   end)
 end
 
 local function popup()
-  if debounce then debounce:stop() end
-  debounce = vim.loop.new_timer()
-  debounce:start(70, 0, vim.schedule_wrap(function()
+  if debounce then
     debounce:stop()
-    if vim.fn.pumvisible() ~= 0 then return end
-    local ctx = current_context()
-    if not should_autocomplete(ctx) then return end
-    pcall(trigger_omnifunc)
-  end))
+  end
+  debounce = vim.loop.new_timer()
+  debounce:start(
+    70,
+    0,
+    vim.schedule_wrap(function()
+      debounce:stop()
+      if vim.fn.pumvisible() ~= 0 then
+        return
+      end
+      local ctx = current_context()
+      if not should_autocomplete(ctx) then
+        return
+      end
+      pcall(trigger_omnifunc)
+    end)
+  )
 end
 
 function M.setup()
@@ -112,7 +144,6 @@ function M.setup()
     end
 
     -- Fallback: pure omnifunc autocompletion.
-    use_cmp = false
     local opt = vim.o.completeopt
     for _, flag in ipairs({ "menuone", "noinsert", "noselect" }) do
       if not vim.tbl_contains(vim.split(opt, ","), flag) then
@@ -121,7 +152,7 @@ function M.setup()
       end
     end
 
-vim.api.nvim_create_autocmd("FileType", {
+    vim.api.nvim_create_autocmd("FileType", {
       pattern = "haskell",
       callback = function(args)
         if vim.bo[args.buf].filetype == "haskell" then

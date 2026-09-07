@@ -1,6 +1,3 @@
-[tool]
-based_on = "default"
-
 column_width = 120
 line_endings = "Unix"
 indent_type = "Spaces"

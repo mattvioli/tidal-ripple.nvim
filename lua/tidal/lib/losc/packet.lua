@@ -22,20 +22,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ]]
 
-local relpath = (...):gsub('%.[^%.]+$', '')
-local Message = require(relpath .. '.message')
-local Bundle = require(relpath .. '.bundle')
-local Types = require(relpath .. '.types')
+local relpath = (...):gsub("%.[^%.]+$", "")
+local Message = require(relpath .. ".message")
+local Bundle = require(relpath .. ".bundle")
+local Types = require(relpath .. ".types")
 
 local Packet = {}
 
 function Packet.is_bundle(packet)
-  if type(packet) == 'string' then
+  if type(packet) == "string" then
     local value = Types.unpack.s(packet)
-    return value == '#bundle'
-  elseif type(packet) == 'table' then
+    return value == "#bundle"
+  elseif type(packet) == "table" then
     packet = packet.content or packet
-    return type(packet.timetag) == 'table'
+    return type(packet.timetag) == "table"
   end
 end
 

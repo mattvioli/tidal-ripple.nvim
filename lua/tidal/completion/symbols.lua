@@ -1,10 +1,9 @@
 local M = {}
 
 local symbols = {}
-local buf_ns = nil
 
 local function extract_param_value(line, param_name)
-  return line:match('%f[%w]' .. param_name .. '%s+"([^"]+)"')
+  return line:match("%f[%w]" .. param_name .. '%s+"([^"]+)"')
 end
 
 local function parse_let_line(line)
@@ -16,7 +15,9 @@ local function parse_let_line(line)
   else
     name, rest = line:match("^%s*([%w_%-]+)%s*=%s*(.*)$")
   end
-  if not name or not rest then return nil end
+  if not name or not rest then
+    return nil
+  end
 
   local info = { name = name, raw = rest }
   local sound_val = extract_param_value(rest, "sound") or extract_param_value(rest, "s")
@@ -38,7 +39,9 @@ local function parse_p_line(line)
   if not name then
     _, _, name, rest = line:find("p%s+(%w+)%s+%$%s*(.*)")
   end
-  if not name or not rest then return nil end
+  if not name or not rest then
+    return nil
+  end
   local info = { name = name, raw = rest }
   local sound_val = extract_param_value(rest, "sound") or extract_param_value(rest, "s")
   if sound_val then
@@ -50,15 +53,21 @@ end
 
 local function starts_let_block(line)
   local stripped = line:gsub("^%s*", "")
-  if not stripped:match("^let") then return false end
-  if stripped:match("^let%s+in") then return false end
+  if not stripped:match("^let") then
+    return false
+  end
+  if stripped:match("^let%s+in") then
+    return false
+  end
   local rest = stripped:sub(4)
   return rest == "" or rest:match("^%s+[%w_%-]+") ~= nil
 end
 
 function M.scan_buffer(buf)
   symbols = {}
-  if not vim.api.nvim_buf_is_valid(buf) then return end
+  if not vim.api.nvim_buf_is_valid(buf) then
+    return
+  end
 
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
   local let_lines = {}
@@ -66,7 +75,9 @@ function M.scan_buffer(buf)
   local in_let = false
 
   local function flush_let_lines()
-    if #let_lines == 0 then return end
+    if #let_lines == 0 then
+      return
+    end
     for _, l in ipairs(let_lines) do
       local info = parse_let_line(l)
       if info then
@@ -122,7 +133,9 @@ function M.get_all_symbols()
   for name, info in pairs(symbols) do
     table.insert(result, { word = name, menu = "pat", info = info.type or "pattern" })
   end
-  table.sort(result, function(a, b) return a.word < b.word end)
+  table.sort(result, function(a, b)
+    return a.word < b.word
+  end)
   return result
 end
 

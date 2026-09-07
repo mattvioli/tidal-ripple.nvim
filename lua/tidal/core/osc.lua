@@ -7,7 +7,6 @@ local ctrl = require("tidal.core.ctrl")
 local M = {}
 
 local function parse_dirt_play(msg)
-
   if #msg < 4 then
     return nil
   end
@@ -53,9 +52,18 @@ local function dispatch(msg)
 
   if config.options.osc.debug then
     vim.schedule(function()
-      vim.notify(string.format("OSC /dirt/play: sound=%s n=%s cycle=%s cps=%s orbit=%s delta=%s",
-        vim.inspect(parsed.sound), vim.inspect(parsed.n), vim.inspect(parsed.cycle),
-        vim.inspect(parsed.cps), vim.inspect(parsed.orbit), vim.inspect(parsed.delta)), vim.log.levels.DEBUG)
+      vim.notify(
+        string.format(
+          "OSC /dirt/play: sound=%s n=%s cycle=%s cps=%s orbit=%s delta=%s",
+          vim.inspect(parsed.sound),
+          vim.inspect(parsed.n),
+          vim.inspect(parsed.cycle),
+          vim.inspect(parsed.cps),
+          vim.inspect(parsed.orbit),
+          vim.inspect(parsed.delta)
+        ),
+        vim.log.levels.DEBUG
+      )
     end)
   end
 

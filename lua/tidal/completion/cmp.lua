@@ -18,9 +18,15 @@ function source:get_trigger_characters()
 end
 
 local function should_offer(ctx)
-  if not ctx or not ctx.type then return false end
-  if ctx.type == "empty" then return false end
-  if ctx.type == "param" or ctx.type == "function" then return true end
+  if not ctx or not ctx.type then
+    return false
+  end
+  if ctx.type == "empty" then
+    return false
+  end
+  if ctx.type == "param" or ctx.type == "function" then
+    return true
+  end
   if ctx.type == "sample" or ctx.type == "index" or ctx.type == "param_value" then
     return (ctx.prefix or "") ~= ""
   end

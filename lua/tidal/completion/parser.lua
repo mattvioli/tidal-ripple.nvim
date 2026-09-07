@@ -6,15 +6,15 @@ local sample_data = require("tidal.data.sample_banks")
 local M = {}
 
 local ts_available = false
-local parser = nil
 
 local function check_ts()
   local ok = pcall(function()
     return vim.treesitter
   end)
-  if not ok then return false end
+  if not ok then
+    return false
+  end
 
-  local parsers = vim.treesitter.language or vim.treesitter
   local has_parser = pcall(function()
     return vim.treesitter.get_parser(0, "haskell")
   end)
@@ -55,19 +55,26 @@ do
 end
 
 local function get_string_at_cursor_ts(buf, row, col)
-  if not ts_available then return nil end
+  if not ts_available then
+    return nil
+  end
   local ok, root = pcall(function()
     local p = vim.treesitter.get_parser(buf, "haskell")
     return p:parse()[1]:root()
   end)
-  if not ok or not root then return nil end
+  if not ok or not root then
+    return nil
+  end
 
-  local query = vim.treesitter.query.parse("haskell", [[
+  local query = vim.treesitter.query.parse(
+    "haskell",
+    [[
     (string_literal) @string
-  ]])
+  ]]
+  )
 
   local best = nil
-  for id, node in query:iter_captures(root, buf, row, row + 1) do
+  for _, node in query:iter_captures(root, buf, row, row + 1) do
     if node then
       local start_row, start_col, end_row, end_col = node:range()
       if start_row <= row and end_row >= row then
@@ -82,7 +89,11 @@ local function get_string_at_cursor_ts(buf, row, col)
           in_range = col <= end_col
         end
         if in_range then
-          if not best or (start_row > best.start_row) or (start_row == best.start_row and start_col > best.start_col) then
+          if
+            not best
+            or (start_row > best.start_row)
+            or (start_row == best.start_row and start_col > best.start_col)
+          then
             best = { node = node, start_row = start_row, start_col = start_col, end_row = end_row, end_col = end_col }
           end
         end
@@ -92,36 +103,11 @@ local function get_string_at_cursor_ts(buf, row, col)
   return best
 end
 
-local function get_param_at_cursor_ts(buf, row, col)
-  if not ts_available then return nil end
-  local ok, root = pcall(function()
-    local p = vim.treesitter.get_parser(buf, "haskell")
-    return p:parse()[1]:root()
-  end)
-  if not ok or not root then return nil end
-
-  local query = vim.treesitter.query.parse("haskell", [[
-    (variable) @var
-  ]])
-
-  local best = nil
-  for id, node in query:iter_captures(root, buf, row, row + 1) do
-    if node then
-      local start_row, start_col, end_row, end_col = node:range()
-      if start_row <= row and end_row >= row and start_col <= col and end_col >= col then
-        local text = vim.treesitter.get_node_text(node, buf)
-        if param_names[text] then
-          return { name = text, node = node }
-        end
-      end
-    end
-  end
-  return nil
-end
-
 local function get_string_content_at_cursor_ts(buf, row, col)
   local info = get_string_at_cursor_ts(buf, row, col)
-  if not info then return nil end
+  if not info then
+    return nil
+  end
 
   local text = vim.treesitter.get_node_text(info.node, buf)
   local inner = text:sub(2, #text - 1)
@@ -154,7 +140,9 @@ local function get_string_content_at_cursor_ts(buf, row, col)
           end
         end
       end
-      if param_name then break end
+      if param_name then
+        break
+      end
       parent = parent:parent()
     end
   end
@@ -171,19 +159,26 @@ local function get_string_content_at_cursor_ts(buf, row, col)
 end
 
 local function find_param_on_line_ts(buf, row, target_param)
-  if not ts_available then return nil end
+  if not ts_available then
+    return nil
+  end
   local ok, root = pcall(function()
     local p = vim.treesitter.get_parser(buf, "haskell")
     return p:parse()[1]:root()
   end)
-  if not ok or not root then return nil end
+  if not ok or not root then
+    return nil
+  end
 
-  local query = vim.treesitter.query.parse("haskell", [[
+  local query = vim.treesitter.query.parse(
+    "haskell",
+    [[
     (string_literal) @str
-  ]])
+  ]]
+  )
 
   local strings = {}
-  for id, node in query:iter_captures(root, buf, row, row + 1) do
+  for _, node in query:iter_captures(root, buf, row, row + 1) do
     if node then
       local srow = node:range()
       table.insert(strings, { node = node, row = srow })
@@ -205,7 +200,9 @@ end
 
 local function find_param_on_line_fallback(buf, row, target_param)
   local lines = vim.api.nvim_buf_get_lines(buf, row - 1, row, false)
-  if #lines == 0 then return nil end
+  if #lines == 0 then
+    return nil
+  end
   local line = lines[1]
   local _, _, val = line:find(target_param .. '%s+"([^"]*)"')
   return val
@@ -213,17 +210,20 @@ end
 
 local function find_param_on_line(buf, row, target_param)
   local val = find_param_on_line_ts(buf, row - 1, target_param)
-  if val then return val end
+  if val then
+    return val
+  end
   return find_param_on_line_fallback(buf, row, target_param)
 end
 
 local function get_context_fallback(buf, row, col)
   local lines = vim.api.nvim_buf_get_lines(buf, row - 1, row, false)
-  if #lines == 0 then return { type = "empty" } end
+  if #lines == 0 then
+    return { type = "empty" }
+  end
   local line = lines[1]
 
   local text_before = line:sub(1, col + 1)
-  local text_at = line:sub(col + 1, col + 1)
 
   local in_string = false
   local string_start = nil
@@ -253,8 +253,7 @@ local function get_context_fallback(buf, row, col)
     if param_name == "s" or param_name == "sound" then
       return { type = "sample", prefix = prefix, param = param_name }
     elseif param_name == "n" or param_name == "note" then
-      local s_val = find_param_on_line_fallback(buf, row, "s")
-        or find_param_on_line_fallback(buf, row, "sound")
+      local s_val = find_param_on_line_fallback(buf, row, "s") or find_param_on_line_fallback(buf, row, "sound")
       return { type = "index", prefix = prefix, bank = s_val, param = param_name }
     elseif param_name then
       return { type = "param_value", prefix = prefix, param = param_name }
@@ -282,10 +281,14 @@ local function string_prefix(inner, cursor_inner)
 end
 
 function M.get_context(buf, row, col)
-  if not buf then buf = 0 end
+  if not buf then
+    buf = 0
+  end
 
   local line = vim.api.nvim_buf_get_lines(buf, row - 1, row, false)[1] or ""
-  if #line == 0 then return { type = "empty" } end
+  if #line == 0 then
+    return { type = "empty" }
+  end
 
   local ts_str = nil
   if ts_available then

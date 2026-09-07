@@ -66,12 +66,16 @@ local function apply_flash(m, parsed)
 
   local timer = vim.uv.new_timer()
   flash_timers[m.id] = timer
-  timer:start(duration, 0, vim.schedule_wrap(function()
-    if flash_timers[m.id] == timer then
-      flash_timers[m.id] = nil
-    end
-    update_marker(m, "TidalRipplePlayhead")
-  end))
+  timer:start(
+    duration,
+    0,
+    vim.schedule_wrap(function()
+      if flash_timers[m.id] == timer then
+        flash_timers[m.id] = nil
+      end
+      update_marker(m, "TidalRipplePlayhead")
+    end)
+  )
 end
 
 local function latest_marker_for_orbit(orbit)

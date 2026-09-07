@@ -22,34 +22,34 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ]]
 
-local relpath = (...):gsub('%.[^%.]+$', '')
-local Packet = require(relpath .. '.packet')
-local Timetag = require(relpath .. '.timetag')
+local relpath = (...):gsub("%.[^%.]+$", "")
+local Packet = require(relpath .. ".packet")
+local Timetag = require(relpath .. ".timetag")
 
 local Pattern = {}
 
 local ts = Timetag.get_timestamp
 
 function Pattern.escape(pattern)
-  pattern = pattern:gsub('%%', '%%%%')
-  pattern = pattern:gsub('%.', '%%.')
-  pattern = pattern:gsub('%(', '%%(')
-  pattern = pattern:gsub('%)', '%%)')
-  pattern = pattern:gsub('%+', '%%+')
-  pattern = pattern:gsub('%$', '%%$')
-  pattern = pattern:gsub('%*', '.*')
-  pattern = pattern:gsub('%?', '.')
-  pattern = pattern:gsub('%[!', '[^')
-  pattern = pattern:gsub('%]', ']+')
+  pattern = pattern:gsub("%%", "%%%%")
+  pattern = pattern:gsub("%.", "%%.")
+  pattern = pattern:gsub("%(", "%%(")
+  pattern = pattern:gsub("%)", "%%)")
+  pattern = pattern:gsub("%+", "%%+")
+  pattern = pattern:gsub("%$", "%%$")
+  pattern = pattern:gsub("%*", ".*")
+  pattern = pattern:gsub("%?", ".")
+  pattern = pattern:gsub("%[!", "[^")
+  pattern = pattern:gsub("%]", "]+")
   return pattern
 end
 
 local function match(key, address)
   local result = address:match(key) == address
-  if not result and key:find('{') then
+  if not result and key:find("{") then
     local index = 1
-    local tmps = ''
-    for c in key:gmatch('.') do
+    local tmps = ""
+    for c in key:gmatch(".") do
       local a = address:sub(index, index)
       if a == c then
         tmps = tmps .. c
@@ -90,7 +90,7 @@ local function dispatch(packet, plugin)
         if ts(item.timetag, plugin.precision) >= ts(packet.timetag, plugin.precision) then
           dispatch(item, plugin)
         else
-          error('Bundle timestamp is older than timestamp of enclosing bundle')
+          error("Bundle timestamp is older than timestamp of enclosing bundle")
         end
       else
         invoke(item, ts(packet.timetag, plugin.precision), plugin)
