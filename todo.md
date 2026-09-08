@@ -24,7 +24,8 @@
 
 - [ ] **Tests / CI** — no test infra exists yet.
 - [ ] **Looper end-to-end test** — `iterations.md` claims implemented but unverified.
-- [ ] **Pattern transition helpers** — editor-side shortcuts for `xfade`, `fadeIn`, `clutch`, `interpolate`, `jumpIn`. Wrap current block with `fadeIn 8 $` etc.
+- [ ] **Pattern transition helpers** — editor-side shortcuts for `xfade`, `fadeIn`, `clutch`, `interpolate`, `jumpIn`.
+Wrap current block with `fadeIn 8 $` etc.
 - [ ] **Pattern presets/slots** — store/recall named pattern sets (Estuary JSoLangs / feedforward keystroke banks).
 - [ ] **`once` one-shot trigger** — keybind to run a riser/FX/sample once without persisting.
 - [ ] **`resetCycles`** — resync the Tidal cycle clock from the editor.
@@ -34,6 +35,8 @@
 - [ ] **Pattern undo/history** — snapshot pattern state per send for recall (vim undotree partially covers this).
 - [ ] **`:checkhealth tidal`** — verify JACK, GHCi, sclang, OSC connectivity.
 - [ ] **Auto-add to sample bank** — automatically detect and add new samples to the sample bank data.
+- [ ] \*\*Tap can insert example pattern, EG "~ ~ ~ ~" for 4/4
+- [ ] \*\*Tap-multi timesigs in pattern
 
 ## Notes
 
