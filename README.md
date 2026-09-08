@@ -1,8 +1,9 @@
 # tidal-ripple.nvim
 
-Visually pleasing TidalCycles live coding for Neovim.
+Visually pleasing TidalCycles live coding for Neovim. That has put on a LOT of weight.
 
-Fork of [grddavies/tidal.nvim](https://github.com/grddavies/tidal.nvim) with enhanced visualization, terminal management, auto-boot, autocomplete, a sample browser, and TidalLooper integration.
+Fork of [grddavies/tidal.nvim](https://github.com/grddavies/tidal.nvim) with enhanced visualization, terminal
+management, auto-boot, autocomplete, a sample browser, and TidalLooper integration.
 
 ## Features
 
@@ -18,343 +19,1741 @@ Fork of [grddavies/tidal.nvim](https://github.com/grddavies/tidal.nvim) with enh
 - Playhead sign markers (`▶`) on sent lines, flashing in time with OSC cycle feedback
 - Event highlighting — the lines actively producing sound flash in sync with audio, driven by `/dirt/play` timing
 - Bidirectional OSC — playback control (`mute`/`solo`/`hush`) and `/ctrl` controller values sent to Tidal on port 6010
-- MIDI controller support — `/ctrl` messages (from a hardware→OSC bridge) are received, stored, and exposed to scripts (`api.ctrl_get`, `:TidalCtrlList`)
+- MIDI controller support — `/ctrl` messages (from a hardware→OSC bridge) are received, stored, and exposed to scripts
+(`api.ctrl_get`, `:TidalCtrlList`)
 - Statusline component showing live CPS / BPM / cycle / time signature
-- Floating-window beat grid visualizer, per-orbit, with configurable colors (toggle with `:TidalVisualizerToggle` or `<leader>v`)
-- Tap tempo with BPM + time-signature inference (toggle with `:TidalTapTempo` or `<leader>t`)
-- Sample bank browser — all 218 Dirt-Samples banks with descriptions and file listings (`:TidalSampleBrowser` or `<leader>a`)
-- Context-aware autocomplete — pattern functions, control params, sample banks/indices, keywords, and user symbols (nvim-cmp source or omnifunc)
-- **TidalLooper integration** — live sampling via SuperDirt (default off, enable with `boot.looper.enabled = true`)
-- Bundled `Looper.scd` boot file for TidalLooper
+- Floating-window beat grid visualizer, per-orbit, with configurable colors (toggle with `:TidalVisualizerToggle` or `
+<leader>v`)
+    - Tap tempo with BPM + time-signature inference (toggle with `:TidalTapTempo` or `<leader>t`)
+        - Sample bank browser — all 218 Dirt-Samples banks with descriptions and file listings (`:TidalSampleBrowser` or
+        `<leader>a`)
+            - Context-aware autocomplete — pattern functions, control params, sample banks/indices, keywords, and user
+            symbols (nvim-cmp source or omnifunc)
+            - **TidalLooper integration** — live sampling via SuperDirt (default off, enable with `boot.looper.enabled =
+            true`)
+            - Bundled `Looper.scd` boot file for TidalLooper
 
-## Documentation
+            ## Documentation
 
-- [Tutorial](docs/tutorial.md) — hands-on guide to using the plugin
-- [Feature reference](docs/features.md) — detailed explanation of every feature
-- `:h tidal-ripple` — built-in help
+            - [Tutorial](docs/tutorial.md) — hands-on guide to using the plugin
+            - [Feature reference](docs/features.md) — detailed explanation of every feature
+            - `:h tidal-ripple` — built-in help
 
-## Prerequisites
+            ## Prerequisites
 
-- A TidalCycles install: `ghci` with the Tidal library (`stack`/`cabal`/`ghcup`, see [tidalcycles.org](https://tidalcycles.org))
-- SuperCollider with the SuperDirt quark
-- JACK (optional but recommended) — the plugin can auto-detect your soundcard and spawn `jackd`
-- `nvim-treesitter` (haskell parser) for best autocomplete, `nvim-cmp` for the cmp backend
-- Neovim `>= 0.10`
+            - A TidalCycles install: `ghci` with the Tidal library (`stack`/`cabal`/`ghcup`, see
+            [tidalcycles.org](https://tidalcycles.org))
+            - SuperCollider with the SuperDirt quark
+            - JACK (optional but recommended) — the plugin can auto-detect your soundcard and spawn `jackd`
+            - `nvim-treesitter` (haskell parser) for best autocomplete, `nvim-cmp` for the cmp backend
+            - Neovim `>= 0.10`
 
-## Installation
+            ## Installation
 
-### lazy.nvim
+            ### lazy.nvim
 
-```lua
-{
-  "mattvioli/tidal-ripple.nvim",
-  opts = {
-    -- See configuration section for defaults
-  },
-  dependencies = {
-    "nvim-treesitter/nvim-treesitter",
-    opts = { ensure_installed = { "haskell", "supercollider" } },
-  },
-}
-```
+            ```lua
+            {
+            "mattvioli/tidal-ripple.nvim",
+            opts = {
+            -- See configuration section for defaults
+            },
+            dependencies = {
+            "nvim-treesitter/nvim-treesitter",
+            opts = { ensure_installed = { "haskell", "supercollider" } },
+            },
+            }
+            ```
 
-## Configuration
+            ## Configuration
 
-```lua
-{
-  boot = {
-    tidal = {
-      cmd = "ghci",
-      args = { "-v0" },
-      file = vim.api.nvim_get_runtime_file("bootfiles/BootTidal.hs", false)[1],
-      enabled = true,
-      osc_target = {          -- second OSC target for visualization
-        enabled = true,
-        port = 5050,
-        address = "127.0.0.1",
-        latency = 0.2,
-      },
-    },
-    sclang = {
-      cmd = "sclang",
-      args = {},
-      file = vim.api.nvim_get_runtime_file("bootfiles/BootSuperDirt.scd", false)[1],
-      enabled = true,     -- boot sclang by default (set false to disable)
-      kill_jack = true,   -- stop existing jackd before starting
-      soundcard = nil,    -- auto-detect; set e.g. "hw:0" to skip prompt
-      pre_cmd = nil,      -- command to run before sclang starts
-    },
-    looper = {
-      enabled = false,       -- set true to enable TidalLooper
-      num_buffers = 8,       -- number of loop buffers per bank
-      p_level = 0.0,         -- 0.0 = replace, 1.0 = overdub
-      r_level = 2.5,         -- recording level
-      default_input = 0,     -- default audio input port
-      default_name = "loop", -- default sample bank name
-      persist_path = "~/Music/Loops/", -- path for persisted loops
-      debug_mode = false,
-    },
-    split = "h",
-  },
-  mappings = {
-    send_line   = { mode = { "i", "n" }, key = "<S-CR>" },
-    send_visual = { mode = { "x" },       key = "<S-CR>" },
-    send_block  = { mode = { "i", "n", "x" }, key = "<M-CR>" },
-    send_node   = { mode = "n",           key = "<leader><CR>" },
-    send_silence = { mode = "n",          key = "<leader>d" },
-    send_hush   = { mode = "n",           key = "<leader><Esc>" },
-    show_meter  = { mode = { "n", "i", "x" }, key = "<F1>" },
-    show_scope  = { mode = { "n", "i", "x" }, key = "<F2>" },
-    show_tree   = { mode = { "n", "i", "x" }, key = "<F3>" },
-    toggle_osc        = { mode = "n", key = "<leader>o" },
-    toggle_visualizer = { mode = "n", key = "<leader>v" },
-    toggle_taptempo   = { mode = "n", key = "<leader>t" },
-    looper_record     = { mode = "n", key = "<leader>lr" },
-    looper_overdub    = { mode = "n", key = "<leader>lo" },
-    looper_free       = { mode = "n", key = "<leader>lf" },
-    looper_free_all   = { mode = "n", key = "<leader>lF" },
-    looper_mode_cycle = { mode = "n", key = "<leader>lm" },
-    looper_persist    = { mode = "n", key = "<leader>lp" },
-    toggle_sample_browser = { mode = "n", key = "<leader>a" },
-    investigate_sample    = { mode = "n", key = "<leader>i" },
-    osc_mute              = { mode = "n", key = "<leader>m" },  -- mute via OSC (count = orbit, default all)
-    osc_unmute            = { mode = "n", key = "<leader>u" },  -- unmute via OSC (count = orbit, default all)
-    osc_solo              = { mode = "n", key = "<leader>s" },  -- solo via OSC (count = orbit, default all)
-    osc_unsolo            = { mode = "n", key = "<leader>S" },  -- unsolo via OSC (count = orbit, default all)
-    osc_hush              = { mode = "n", key = "<leader>h" },  -- hush via OSC
-  },
-  selection_highlight = {
-    highlight = { link = "IncSearch" },
-    timeout = 150,
-  },
-  osc = {
-    port = 5050,      -- must match boot.tidal.osc_target.port (listener)
-    tidal_port = 6010, -- Tidal's OSC control input (playback control + /ctrl)
-    enabled = true,   -- start the OSC listener after launch
-    debug = false,    -- log every /dirt/play message at DEBUG level
-    ctrl_debug = false, -- log every /ctrl message at INFO level
-  },
-  event_highlight = {
-    enabled = true,   -- flash the live pattern lines with audio timing
-    highlight = { link = "TidalRippleEvent" },
-    fade_ms = 400,     -- base flash duration (delta of the event wins when present)
-  },
-  playhead = {
-    enabled = true,
-    highlight = { link = "TidalRipplePlayhead" },
-  },
-  statusline = {
-    enabled = true,
-    format = "♩ {cps} CPS | c.{cycle}",
-  },
-  visualizer = {
-    width = 60,
-    height = 12,
-    border = "single",
-    refresh_interval_ms = 33,
-    grid = {
-      divisions = 4,        -- beats per cycle
-      total_cycles = 1,
-      chars_per_beat = 8,
-    },
-    palette = {
-      "#FF6B6B", "#51CF66", "#FFD43B", "#339AF0",
-      "#CC5DE8", "#20C997", "#F06595", "#FF922B",
-    },
-    max_orbits = 8,
-    max_events_per_orbit = 4,
-  },
-  sample_browser = {
-    width_ratio = 0.33,
-    border = "single",
-  },
-  auto_launch = true,
-  completion = {
-    enabled = true,
-    backend = "cmp",    -- "cmp" (nvim-cmp, default) or "omnifunc"
-    source_name = "tidal",
-  },
-  taptempo = {
-    min_taps = 2,          -- taps before BPM is sent (setcps)
-    max_taps = 16,
-    outlier_threshold = 0.3, -- tap-interval outliers are discarded
-    exit_factor = 3.0,       -- a late tap 3x the median exits tap mode
-    idle_ms = 1000,
-    popup = {
-      width = 22,
-      height = 16,
-      border = "single",
-      flash_ms = 150,
-      refresh_ms = 50,
-      anim_width = 12,
-      anim_height = 3,
-    },
-  },
-}
-```
+            ```lua
+            {
+            boot = {
+            tidal = {
+            cmd = "ghci",
+            args = { "-v0" },
+            file = vim.api.nvim_get_runtime_file("bootfiles/BootTidal.hs", false)[1],
+            enabled = true,
+            osc_target = { -- second OSC target for visualization
+            enabled = true,
+            port = 5050,
+            address = "127.0.0.1",
+            latency = 0.2,
+            },
+            },
+            sclang = {
+            cmd = "sclang",
+            args = {},
+            file = vim.api.nvim_get_runtime_file("bootfiles/BootSuperDirt.scd", false)[1],
+            enabled = true, -- boot sclang by default (set false to disable)
+            kill_jack = true, -- stop existing jackd before starting
+            soundcard = nil, -- auto-detect; set e.g. "hw:0" to skip prompt
+            pre_cmd = nil, -- command to run before sclang starts
+            },
+            looper = {
+            enabled = false, -- set true to enable TidalLooper
+            num_buffers = 8, -- number of loop buffers per bank
+            p_level = 0.0, -- 0.0 = replace, 1.0 = overdub
+            r_level = 2.5, -- recording level
+            default_input = 0, -- default audio input port
+            default_name = "loop", -- default sample bank name
+            persist_path = "~/Music/Loops/", -- path for persisted loops
+            debug_mode = false,
+            },
+            split = "h",
+            },
+            mappings = {
+            send_line = { mode = { "i", "n" }, key = "<S-CR>" },
+                send_visual = { mode = { "x" }, key = "<S-CR>" },
+                    send_block = { mode = { "i", "n", "x" }, key = "<M-CR>" },
+                        send_node = { mode = "n", key = "<leader>
+                            <CR>" },
+                                send_silence = { mode = "n", key = "<leader>d" },
+                                    send_hush = { mode = "n", key = "<leader>
+                                        <Esc>" },
+                                            show_meter = { mode = { "n", "i", "x" }, key = "<F1>" },
+                                                show_scope = { mode = { "n", "i", "x" }, key = "<F2>" },
+                                                    show_tree = { mode = { "n", "i", "x" }, key = "<F3>" },
+                                                        toggle_osc = { mode = "n", key = "<leader>o" },
+                                                            toggle_visualizer = { mode = "n", key = "<leader>v" },
+                                                                toggle_taptempo = { mode = "n", key = "<leader>t" },
+                                                                    looper_record = { mode = "n", key = "<leader>lr" },
+                                                                        looper_overdub = { mode = "n", key = "<leader>
+                                                                            lo" },
+                                                                            looper_free = { mode = "n", key = "<leader>
+                                                                                lf" },
+                                                                                looper_free_all = { mode = "n", key = "
+                                                                                <leader>lF" },
+                                                                                    looper_mode_cycle = { mode = "n",
+                                                                                    key = "<leader>lm" },
+                                                                                        looper_persist = { mode = "n",
+                                                                                        key = "<leader>lp" },
+                                                                                            toggle_sample_browser = {
+                                                                                            mode = "n", key = "<leader>
+                                                                                                a" },
+                                                                                                investigate_sample = {
+                                                                                                mode = "n", key = "
+                                                                                                <leader>i" },
+                                                                                                    osc_mute = { mode =
+                                                                                                    "n", key = "<leader>
+                                                                                                        m" }, -- mute
+                                                                                                        via OSC (count =
+                                                                                                        orbit, default
+                                                                                                        all)
+                                                                                                        osc_unmute = {
+                                                                                                        mode = "n", key
+                                                                                                        = "<leader>u" },
+                                                                                                            -- unmute
+                                                                                                            via OSC
+                                                                                                            (count =
+                                                                                                            orbit,
+                                                                                                            default all)
+                                                                                                            osc_solo = {
+                                                                                                            mode = "n",
+                                                                                                            key = "
+                                                                                                            <leader>s"
+                                                                                                                }, --
+                                                                                                                solo via
+                                                                                                                OSC
+                                                                                                                (count =
+                                                                                                                orbit,
+                                                                                                                default
+                                                                                                                all)
+                                                                                                                osc_unsolo
+                                                                                                                = { mode
+                                                                                                                = "n",
+                                                                                                                key = "
+                                                                                                                <leader>
+                                                                                                                    S"
+                                                                                                                    },
+                                                                                                                    --
+                                                                                                                    unsolo
+                                                                                                                    via
+                                                                                                                    OSC
+                                                                                                                    (count
+                                                                                                                    =
+                                                                                                                    orbit,
+                                                                                                                    default
+                                                                                                                    all)
+                                                                                                                    osc_hush
+                                                                                                                    = {
+                                                                                                                    mode
+                                                                                                                    =
+                                                                                                                    "n",
+                                                                                                                    key
+                                                                                                                    = "
+                                                                                                                    <leader>
+                                                                                                                        h"
+                                                                                                                        },
+                                                                                                                        --
+                                                                                                                        hush
+                                                                                                                        via
+                                                                                                                        OSC
+                                                                                                                        },
+                                                                                                                        selection_highlight
+                                                                                                                        =
+                                                                                                                        {
+                                                                                                                        highlight
+                                                                                                                        =
+                                                                                                                        {
+                                                                                                                        link
+                                                                                                                        =
+                                                                                                                        "IncSearch"
+                                                                                                                        },
+                                                                                                                        timeout
+                                                                                                                        =
+                                                                                                                        150,
+                                                                                                                        },
+                                                                                                                        osc
+                                                                                                                        =
+                                                                                                                        {
+                                                                                                                        port
+                                                                                                                        =
+                                                                                                                        5050,
+                                                                                                                        --
+                                                                                                                        must
+                                                                                                                        match
+                                                                                                                        boot.tidal.osc_target.port
+                                                                                                                        (listener)
+                                                                                                                        tidal_port
+                                                                                                                        =
+                                                                                                                        6010,
+                                                                                                                        --
+                                                                                                                        Tidal's
+                                                                                                                        OSC
+                                                                                                                        control
+                                                                                                                        input
+                                                                                                                        (playback
+                                                                                                                        control
+                                                                                                                        +
+                                                                                                                        /ctrl)
+                                                                                                                        enabled
+                                                                                                                        =
+                                                                                                                        true,
+                                                                                                                        --
+                                                                                                                        start
+                                                                                                                        the
+                                                                                                                        OSC
+                                                                                                                        listener
+                                                                                                                        after
+                                                                                                                        launch
+                                                                                                                        debug
+                                                                                                                        =
+                                                                                                                        false,
+                                                                                                                        --
+                                                                                                                        log
+                                                                                                                        every
+                                                                                                                        /dirt/play
+                                                                                                                        message
+                                                                                                                        at
+                                                                                                                        DEBUG
+                                                                                                                        level
+                                                                                                                        ctrl_debug
+                                                                                                                        =
+                                                                                                                        false,
+                                                                                                                        --
+                                                                                                                        log
+                                                                                                                        every
+                                                                                                                        /ctrl
+                                                                                                                        message
+                                                                                                                        at
+                                                                                                                        INFO
+                                                                                                                        level
+                                                                                                                        },
+                                                                                                                        event_highlight
+                                                                                                                        =
+                                                                                                                        {
+                                                                                                                        enabled
+                                                                                                                        =
+                                                                                                                        true,
+                                                                                                                        --
+                                                                                                                        flash
+                                                                                                                        the
+                                                                                                                        live
+                                                                                                                        pattern
+                                                                                                                        lines
+                                                                                                                        with
+                                                                                                                        audio
+                                                                                                                        timing
+                                                                                                                        highlight
+                                                                                                                        =
+                                                                                                                        {
+                                                                                                                        link
+                                                                                                                        =
+                                                                                                                        "TidalRippleEvent"
+                                                                                                                        },
+                                                                                                                        fade_ms
+                                                                                                                        =
+                                                                                                                        400,
+                                                                                                                        --
+                                                                                                                        base
+                                                                                                                        flash
+                                                                                                                        duration
+                                                                                                                        (delta
+                                                                                                                        of
+                                                                                                                        the
+                                                                                                                        event
+                                                                                                                        wins
+                                                                                                                        when
+                                                                                                                        present)
+                                                                                                                        },
+                                                                                                                        playhead
+                                                                                                                        =
+                                                                                                                        {
+                                                                                                                        enabled
+                                                                                                                        =
+                                                                                                                        true,
+                                                                                                                        highlight
+                                                                                                                        =
+                                                                                                                        {
+                                                                                                                        link
+                                                                                                                        =
+                                                                                                                        "TidalRipplePlayhead"
+                                                                                                                        },
+                                                                                                                        },
+                                                                                                                        statusline
+                                                                                                                        =
+                                                                                                                        {
+                                                                                                                        enabled
+                                                                                                                        =
+                                                                                                                        true,
+                                                                                                                        format
+                                                                                                                        =
+                                                                                                                        "♩
+                                                                                                                        {cps}
+                                                                                                                        CPS
+                                                                                                                        |
+                                                                                                                        c.{cycle}",
+                                                                                                                        },
+                                                                                                                        visualizer
+                                                                                                                        =
+                                                                                                                        {
+                                                                                                                        width
+                                                                                                                        =
+                                                                                                                        60,
+                                                                                                                        height
+                                                                                                                        =
+                                                                                                                        12,
+                                                                                                                        border
+                                                                                                                        =
+                                                                                                                        "single",
+                                                                                                                        refresh_interval_ms
+                                                                                                                        =
+                                                                                                                        33,
+                                                                                                                        grid
+                                                                                                                        =
+                                                                                                                        {
+                                                                                                                        divisions
+                                                                                                                        =
+                                                                                                                        4,
+                                                                                                                        --
+                                                                                                                        beats
+                                                                                                                        per
+                                                                                                                        cycle
+                                                                                                                        total_cycles
+                                                                                                                        =
+                                                                                                                        1,
+                                                                                                                        chars_per_beat
+                                                                                                                        =
+                                                                                                                        8,
+                                                                                                                        },
+                                                                                                                        palette
+                                                                                                                        =
+                                                                                                                        {
+                                                                                                                        "#FF6B6B",
+                                                                                                                        "#51CF66",
+                                                                                                                        "#FFD43B",
+                                                                                                                        "#339AF0",
+                                                                                                                        "#CC5DE8",
+                                                                                                                        "#20C997",
+                                                                                                                        "#F06595",
+                                                                                                                        "#FF922B",
+                                                                                                                        },
+                                                                                                                        max_orbits
+                                                                                                                        =
+                                                                                                                        8,
+                                                                                                                        max_events_per_orbit
+                                                                                                                        =
+                                                                                                                        4,
+                                                                                                                        },
+                                                                                                                        sample_browser
+                                                                                                                        =
+                                                                                                                        {
+                                                                                                                        width_ratio
+                                                                                                                        =
+                                                                                                                        0.33,
+                                                                                                                        border
+                                                                                                                        =
+                                                                                                                        "single",
+                                                                                                                        },
+                                                                                                                        auto_launch
+                                                                                                                        =
+                                                                                                                        true,
+                                                                                                                        completion
+                                                                                                                        =
+                                                                                                                        {
+                                                                                                                        enabled
+                                                                                                                        =
+                                                                                                                        true,
+                                                                                                                        backend
+                                                                                                                        =
+                                                                                                                        "cmp",
+                                                                                                                        --
+                                                                                                                        "cmp"
+                                                                                                                        (nvim-cmp,
+                                                                                                                        default)
+                                                                                                                        or
+                                                                                                                        "omnifunc"
+                                                                                                                        source_name
+                                                                                                                        =
+                                                                                                                        "tidal",
+                                                                                                                        },
+                                                                                                                        taptempo
+                                                                                                                        =
+                                                                                                                        {
+                                                                                                                        min_taps
+                                                                                                                        =
+                                                                                                                        2,
+                                                                                                                        --
+                                                                                                                        taps
+                                                                                                                        before
+                                                                                                                        BPM
+                                                                                                                        is
+                                                                                                                        sent
+                                                                                                                        (setcps)
+                                                                                                                        max_taps
+                                                                                                                        =
+                                                                                                                        16,
+                                                                                                                        outlier_threshold
+                                                                                                                        =
+                                                                                                                        0.3,
+                                                                                                                        --
+                                                                                                                        tap-interval
+                                                                                                                        outliers
+                                                                                                                        are
+                                                                                                                        discarded
+                                                                                                                        exit_factor
+                                                                                                                        =
+                                                                                                                        3.0,
+                                                                                                                        --
+                                                                                                                        a
+                                                                                                                        late
+                                                                                                                        tap
+                                                                                                                        3x
+                                                                                                                        the
+                                                                                                                        median
+                                                                                                                        exits
+                                                                                                                        tap
+                                                                                                                        mode
+                                                                                                                        idle_ms
+                                                                                                                        =
+                                                                                                                        1000,
+                                                                                                                        popup
+                                                                                                                        =
+                                                                                                                        {
+                                                                                                                        width
+                                                                                                                        =
+                                                                                                                        22,
+                                                                                                                        height
+                                                                                                                        =
+                                                                                                                        16,
+                                                                                                                        border
+                                                                                                                        =
+                                                                                                                        "single",
+                                                                                                                        flash_ms
+                                                                                                                        =
+                                                                                                                        150,
+                                                                                                                        refresh_ms
+                                                                                                                        =
+                                                                                                                        50,
+                                                                                                                        anim_width
+                                                                                                                        =
+                                                                                                                        12,
+                                                                                                                        anim_height
+                                                                                                                        =
+                                                                                                                        3,
+                                                                                                                        },
+                                                                                                                        },
+                                                                                                                        }
+                                                                                                                        ```
 
-## Keymaps
+                                                                                                                        ##
+                                                                                                                        Keymaps
 
-All keymaps are defined per-buffer (installed on `.tidal` and `.scd` buffers) and can be
-rebound or removed via `mappings.<name> = nil`.
+                                                                                                                        All
+                                                                                                                        keymaps
+                                                                                                                        are
+                                                                                                                        defined
+                                                                                                                        per-buffer
+                                                                                                                        (installed
+                                                                                                                        on
+                                                                                                                        `.tidal`
+                                                                                                                        and
+                                                                                                                        `.scd`
+                                                                                                                        buffers)
+                                                                                                                        and
+                                                                                                                        can
+                                                                                                                        be
+                                                                                                                        rebound
+                                                                                                                        or
+                                                                                                                        removed
+                                                                                                                        via
+                                                                                                                        `mappings.
+                                                                                                                        <name>
+                                                                                                                            =
+                                                                                                                            nil`.
 
-| Key           | Mode      | Action                                         |
-| ------------- | --------- | ---------------------------------------------- |
-| `<S-CR>`      | i, n      | Send current line to GHCi                      |
-| `<S-CR>`      | x         | Send visual selection (incl. `Ctrl-V` block)            |
-| `<M-CR>`      | i, n, x   | Send contiguous non-empty block                |
-| `<leader><CR>`| n         | Send tree-sitter node under cursor             |
-| `<leader>d`   | n         | Send `d{count} silence` (count prefix = orbit) |
-| `<leader><Esc>`| n        | Send `hush` (silence all patterns)             |
-| `<F1>`        | n, i, x   | SuperCollider `s.meter`                        |
-| `<F2>`        | n, i, x   | SuperCollider `s.scope`                        |
-| `<F3>`        | n, i, x   | SuperCollider `s.plotTree`                     |
-| `<leader>o`   | n         | Toggle the OSC listener                        |
-| `<leader>v`   | n         | Toggle the beat grid visualizer                |
-| `<leader>t`   | n         | Toggle tap tempo                               |
-| `<leader>a`   | n         | Toggle the sample browser                      |
-| `<leader>i`   | n         | Investigate sample bank under cursor           |
-| `<leader>lr`  | n         | Looper: record (count prefix = orbit)          |
-| `<leader>lo`  | n         | Looper: overdub                                |
-| `<leader>lf`  | n         | Looper: free buffer (count prefix = buffer)    |
-| `<leader>lF`  | n         | Looper: free all buffers                       |
-| `<leader>lm`  | n         | Looper: cycle mode replace ↔ overdub           |
-| `<leader>lp`  | n         | Looper: persist loops to disk                  |
-| `<leader>m`   | n         | Mute via OSC (count prefix = orbit, default all) |
-| `<leader>u`   | n         | Unmute via OSC (count prefix = orbit, default all) |
-| `<leader>s`   | n         | Solo via OSC (count prefix = orbit, default all)   |
-| `<leader>S`   | n         | Unsolo via OSC (count prefix = orbit, default all) |
-| `<leader>h`   | n         | Hush via OSC                                     |
+                                                                                                                            |
+                                                                                                                            Key
+                                                                                                                            |
+                                                                                                                            Mode
+                                                                                                                            |
+                                                                                                                            Action
+                                                                                                                            |
+                                                                                                                            |
+                                                                                                                            ---------------
+                                                                                                                            |
+                                                                                                                            -------
+                                                                                                                            |
+                                                                                                                            --------------------------------------------------
+                                                                                                                            |
+                                                                                                                            |
+                                                                                                                            `<S-CR>`
+                                                                                                                                |
+                                                                                                                                i,
+                                                                                                                                n
+                                                                                                                                |
+                                                                                                                                Send
+                                                                                                                                current
+                                                                                                                                line
+                                                                                                                                to
+                                                                                                                                GHCi
+                                                                                                                                |
+                                                                                                                                |
+                                                                                                                                `<S-CR>`
+                                                                                                                                    |
+                                                                                                                                    x
+                                                                                                                                    |
+                                                                                                                                    Send
+                                                                                                                                    visual
+                                                                                                                                    selection
+                                                                                                                                    (incl.
+                                                                                                                                    `Ctrl-V`
+                                                                                                                                    block)
+                                                                                                                                    |
+                                                                                                                                    |
+                                                                                                                                    `<M-CR>`
+                                                                                                                                        |
+                                                                                                                                        i,
+                                                                                                                                        n,
+                                                                                                                                        x
+                                                                                                                                        |
+                                                                                                                                        Send
+                                                                                                                                        contiguous
+                                                                                                                                        non-empty
+                                                                                                                                        block
+                                                                                                                                        |
+                                                                                                                                        |
+                                                                                                                                        `
+                                                                                                                                        <leader>
+                                                                                                                                            <CR>`
+                                                                                                                                                |
+                                                                                                                                                n
+                                                                                                                                                |
+                                                                                                                                                Send
+                                                                                                                                                tree-sitter
+                                                                                                                                                node
+                                                                                                                                                under
+                                                                                                                                                cursor
+                                                                                                                                                |
+                                                                                                                                                |
+                                                                                                                                                `
+                                                                                                                                                <leader>
+                                                                                                                                                    d`
+                                                                                                                                                    |
+                                                                                                                                                    n
+                                                                                                                                                    |
+                                                                                                                                                    Send
+                                                                                                                                                    `d{count}
+                                                                                                                                                    silence`
+                                                                                                                                                    (count
+                                                                                                                                                    prefix
+                                                                                                                                                    =
+                                                                                                                                                    orbit)
+                                                                                                                                                    |
+                                                                                                                                                    |
+                                                                                                                                                    `
+                                                                                                                                                    <leader>
+                                                                                                                                                        <Esc>
+                                                                                                                                                            `
+                                                                                                                                                            |
+                                                                                                                                                            n
+                                                                                                                                                            |
+                                                                                                                                                            Send
+                                                                                                                                                            `hush`
+                                                                                                                                                            (silence
+                                                                                                                                                            all
+                                                                                                                                                            patterns)
+                                                                                                                                                            |
+                                                                                                                                                            |
+                                                                                                                                                            `
+                                                                                                                                                            <F1>`
+                                                                                                                                                                |
+                                                                                                                                                                n,
+                                                                                                                                                                i,
+                                                                                                                                                                x
+                                                                                                                                                                |
+                                                                                                                                                                SuperCollider
+                                                                                                                                                                `s.meter`
+                                                                                                                                                                |
+                                                                                                                                                                |
+                                                                                                                                                                `
+                                                                                                                                                                <F2>`
+                                                                                                                                                                    |
+                                                                                                                                                                    n,
+                                                                                                                                                                    i,
+                                                                                                                                                                    x
+                                                                                                                                                                    |
+                                                                                                                                                                    SuperCollider
+                                                                                                                                                                    `s.scope`
+                                                                                                                                                                    |
+                                                                                                                                                                    |
+                                                                                                                                                                    `
+                                                                                                                                                                    <F3>`
+                                                                                                                                                                        |
+                                                                                                                                                                        n,
+                                                                                                                                                                        i,
+                                                                                                                                                                        x
+                                                                                                                                                                        |
+                                                                                                                                                                        SuperCollider
+                                                                                                                                                                        `s.plotTree`
+                                                                                                                                                                        |
+                                                                                                                                                                        |
+                                                                                                                                                                        `
+                                                                                                                                                                        <leader>
+                                                                                                                                                                            o`
+                                                                                                                                                                            |
+                                                                                                                                                                            n
+                                                                                                                                                                            |
+                                                                                                                                                                            Toggle
+                                                                                                                                                                            the
+                                                                                                                                                                            OSC
+                                                                                                                                                                            listener
+                                                                                                                                                                            |
+                                                                                                                                                                            |
+                                                                                                                                                                            `
+                                                                                                                                                                            <leader>
+                                                                                                                                                                                v`
+                                                                                                                                                                                |
+                                                                                                                                                                                n
+                                                                                                                                                                                |
+                                                                                                                                                                                Toggle
+                                                                                                                                                                                the
+                                                                                                                                                                                beat
+                                                                                                                                                                                grid
+                                                                                                                                                                                visualizer
+                                                                                                                                                                                |
+                                                                                                                                                                                |
+                                                                                                                                                                                `
+                                                                                                                                                                                <leader>
+                                                                                                                                                                                    t`
+                                                                                                                                                                                    |
+                                                                                                                                                                                    n
+                                                                                                                                                                                    |
+                                                                                                                                                                                    Toggle
+                                                                                                                                                                                    tap
+                                                                                                                                                                                    tempo
+                                                                                                                                                                                    |
+                                                                                                                                                                                    |
+                                                                                                                                                                                    `
+                                                                                                                                                                                    <leader>
+                                                                                                                                                                                        a`
+                                                                                                                                                                                        |
+                                                                                                                                                                                        n
+                                                                                                                                                                                        |
+                                                                                                                                                                                        Toggle
+                                                                                                                                                                                        the
+                                                                                                                                                                                        sample
+                                                                                                                                                                                        browser
+                                                                                                                                                                                        |
+                                                                                                                                                                                        |
+                                                                                                                                                                                        `
+                                                                                                                                                                                        <leader>
+                                                                                                                                                                                            i`
+                                                                                                                                                                                            |
+                                                                                                                                                                                            n
+                                                                                                                                                                                            |
+                                                                                                                                                                                            Investigate
+                                                                                                                                                                                            sample
+                                                                                                                                                                                            bank
+                                                                                                                                                                                            under
+                                                                                                                                                                                            cursor
+                                                                                                                                                                                            |
+                                                                                                                                                                                            |
+                                                                                                                                                                                            `
+                                                                                                                                                                                            <leader>
+                                                                                                                                                                                                lr`
+                                                                                                                                                                                                |
+                                                                                                                                                                                                n
+                                                                                                                                                                                                |
+                                                                                                                                                                                                Looper:
+                                                                                                                                                                                                record
+                                                                                                                                                                                                (count
+                                                                                                                                                                                                prefix
+                                                                                                                                                                                                =
+                                                                                                                                                                                                orbit)
+                                                                                                                                                                                                |
+                                                                                                                                                                                                |
+                                                                                                                                                                                                `
+                                                                                                                                                                                                <leader>
+                                                                                                                                                                                                    lo`
+                                                                                                                                                                                                    |
+                                                                                                                                                                                                    n
+                                                                                                                                                                                                    |
+                                                                                                                                                                                                    Looper:
+                                                                                                                                                                                                    overdub
+                                                                                                                                                                                                    |
+                                                                                                                                                                                                    |
+                                                                                                                                                                                                    `
+                                                                                                                                                                                                    <leader>
+                                                                                                                                                                                                        lf`
+                                                                                                                                                                                                        |
+                                                                                                                                                                                                        n
+                                                                                                                                                                                                        |
+                                                                                                                                                                                                        Looper:
+                                                                                                                                                                                                        free
+                                                                                                                                                                                                        buffer
+                                                                                                                                                                                                        (count
+                                                                                                                                                                                                        prefix
+                                                                                                                                                                                                        =
+                                                                                                                                                                                                        buffer)
+                                                                                                                                                                                                        |
+                                                                                                                                                                                                        |
+                                                                                                                                                                                                        `
+                                                                                                                                                                                                        <leader>
+                                                                                                                                                                                                            lF`
+                                                                                                                                                                                                            |
+                                                                                                                                                                                                            n
+                                                                                                                                                                                                            |
+                                                                                                                                                                                                            Looper:
+                                                                                                                                                                                                            free
+                                                                                                                                                                                                            all
+                                                                                                                                                                                                            buffers
+                                                                                                                                                                                                            |
+                                                                                                                                                                                                            |
+                                                                                                                                                                                                            `
+                                                                                                                                                                                                            <leader>
+                                                                                                                                                                                                                lm`
+                                                                                                                                                                                                                |
+                                                                                                                                                                                                                n
+                                                                                                                                                                                                                |
+                                                                                                                                                                                                                Looper:
+                                                                                                                                                                                                                cycle
+                                                                                                                                                                                                                mode
+                                                                                                                                                                                                                replace
+                                                                                                                                                                                                                ↔
+                                                                                                                                                                                                                overdub
+                                                                                                                                                                                                                |
+                                                                                                                                                                                                                |
+                                                                                                                                                                                                                `
+                                                                                                                                                                                                                <leader>
+                                                                                                                                                                                                                    lp`
+                                                                                                                                                                                                                    |
+                                                                                                                                                                                                                    n
+                                                                                                                                                                                                                    |
+                                                                                                                                                                                                                    Looper:
+                                                                                                                                                                                                                    persist
+                                                                                                                                                                                                                    loops
+                                                                                                                                                                                                                    to
+                                                                                                                                                                                                                    disk
+                                                                                                                                                                                                                    |
+                                                                                                                                                                                                                    |
+                                                                                                                                                                                                                    `
+                                                                                                                                                                                                                    <leader>
+                                                                                                                                                                                                                        m`
+                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                        n
+                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                        Mute
+                                                                                                                                                                                                                        via
+                                                                                                                                                                                                                        OSC
+                                                                                                                                                                                                                        (count
+                                                                                                                                                                                                                        prefix
+                                                                                                                                                                                                                        =
+                                                                                                                                                                                                                        orbit,
+                                                                                                                                                                                                                        default
+                                                                                                                                                                                                                        all)
+                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                        `
+                                                                                                                                                                                                                        <leader>
+                                                                                                                                                                                                                            u`
+                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                            n
+                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                            Unmute
+                                                                                                                                                                                                                            via
+                                                                                                                                                                                                                            OSC
+                                                                                                                                                                                                                            (count
+                                                                                                                                                                                                                            prefix
+                                                                                                                                                                                                                            =
+                                                                                                                                                                                                                            orbit,
+                                                                                                                                                                                                                            default
+                                                                                                                                                                                                                            all)
+                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                            `
+                                                                                                                                                                                                                            <leader>
+                                                                                                                                                                                                                                s`
+                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                n
+                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                Solo
+                                                                                                                                                                                                                                via
+                                                                                                                                                                                                                                OSC
+                                                                                                                                                                                                                                (count
+                                                                                                                                                                                                                                prefix
+                                                                                                                                                                                                                                =
+                                                                                                                                                                                                                                orbit,
+                                                                                                                                                                                                                                default
+                                                                                                                                                                                                                                all)
+                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                `
+                                                                                                                                                                                                                                <leader>
+                                                                                                                                                                                                                                    S`
+                                                                                                                                                                                                                                    |
+                                                                                                                                                                                                                                    n
+                                                                                                                                                                                                                                    |
+                                                                                                                                                                                                                                    Unsolo
+                                                                                                                                                                                                                                    via
+                                                                                                                                                                                                                                    OSC
+                                                                                                                                                                                                                                    (count
+                                                                                                                                                                                                                                    prefix
+                                                                                                                                                                                                                                    =
+                                                                                                                                                                                                                                    orbit,
+                                                                                                                                                                                                                                    default
+                                                                                                                                                                                                                                    all)
+                                                                                                                                                                                                                                    |
+                                                                                                                                                                                                                                    |
+                                                                                                                                                                                                                                    `
+                                                                                                                                                                                                                                    <leader>
+                                                                                                                                                                                                                                        h`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        n
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Hush
+                                                                                                                                                                                                                                        via
+                                                                                                                                                                                                                                        OSC
+                                                                                                                                                                                                                                        |
 
-## Commands
+                                                                                                                                                                                                                                        ##
+                                                                                                                                                                                                                                        Commands
 
-| Command                               | Description                                              |
-| ------------------------------------- | -------------------------------------------------------- |
-| `:TidalLaunch`                        | Start GHCi + SuperCollider                               |
-| `:TidalQuit`                          | Stop all processes                                       |
-| `:TidalToggle`                        | Show/hide the GHCi terminal window                       |
-| `:TidalHush`                          | Silence all patterns                                     |
-| `:TidalSilence {n}`                   | Silence pattern d{n} (default/`count` = orbit)           |
-| `:TidalOSCToggle`                     | Toggle OSC cycle listener                                |
-| `:TidalVisualizerToggle`              | Toggle beat grid visualizer floating window              |
-| `:TidalTapTempo`                      | Toggle tap tempo mode                                    |
-| `:TidalTapTempoReset`                 | Reset tap tempo history                                  |
-| `:TidalSampleBrowser`                 | Toggle sample bank browser                               |
-| `:TidalSampleInvestigate`             | Investigate sample bank under cursor                     |
-| `:TidalLooperRecord`                  | Record loop on current orbit (count = orbit, default d1) |
-| `:TidalLooperOverdub`                 | Overdub loop on current orbit                            |
-| `:TidalLooperFree {n}`                | Free loop buffer n                                       |
-| `:TidalLooperFreeAll`                 | Free all loop buffers                                    |
-| `:TidalLooperPersist {name}`          | Persist loops to disk                                    |
-| `:TidalLooperMode {replace\|overdub}` | Set looper mode                                          |
-| `:TidalLooperInput {port}`            | Set looper input port                                    |
-| `:TidalMute {n\|name}`                | Mute all / orbit n / named pattern via OSC              |
-| `:TidalUnmute {n\|name}`              | Unmute all / orbit n / named pattern via OSC            |
-| `:TidalSolo {n\|name}`                | Solo orbit n / named pattern via OSC (all silent first) |
-| `:TidalUnsolo {n\|name}`              | Unsolo orbit n / named pattern via OSC                  |
-| `:TidalCtrlSend {key} {value}`        | Send a `/ctrl` value to Tidal (e.g. `amp 0.4`)          |
-| `:TidalCtrlList`                      | List received `/ctrl` values                            |
-| `:TidalCtrlClear`                     | Clear received `/ctrl` values                           |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Command
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Description
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        -------------------------------------
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        --------------------------------------------------------
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalLaunch`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Start
+                                                                                                                                                                                                                                        GHCi
+                                                                                                                                                                                                                                        +
+                                                                                                                                                                                                                                        SuperCollider
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalQuit`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Stop
+                                                                                                                                                                                                                                        all
+                                                                                                                                                                                                                                        processes
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalToggle`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Show/hide
+                                                                                                                                                                                                                                        the
+                                                                                                                                                                                                                                        GHCi
+                                                                                                                                                                                                                                        terminal
+                                                                                                                                                                                                                                        window
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalHush`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Silence
+                                                                                                                                                                                                                                        all
+                                                                                                                                                                                                                                        patterns
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalSilence
+                                                                                                                                                                                                                                        {n}`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Silence
+                                                                                                                                                                                                                                        pattern
+                                                                                                                                                                                                                                        d{n}
+                                                                                                                                                                                                                                        (default/`count`
+                                                                                                                                                                                                                                        =
+                                                                                                                                                                                                                                        orbit)
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalOSCToggle`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Toggle
+                                                                                                                                                                                                                                        OSC
+                                                                                                                                                                                                                                        cycle
+                                                                                                                                                                                                                                        listener
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalVisualizerToggle`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Toggle
+                                                                                                                                                                                                                                        beat
+                                                                                                                                                                                                                                        grid
+                                                                                                                                                                                                                                        visualizer
+                                                                                                                                                                                                                                        floating
+                                                                                                                                                                                                                                        window
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalTapTempo`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Toggle
+                                                                                                                                                                                                                                        tap
+                                                                                                                                                                                                                                        tempo
+                                                                                                                                                                                                                                        mode
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalTapTempoReset`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Reset
+                                                                                                                                                                                                                                        tap
+                                                                                                                                                                                                                                        tempo
+                                                                                                                                                                                                                                        history
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalSampleBrowser`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Toggle
+                                                                                                                                                                                                                                        sample
+                                                                                                                                                                                                                                        bank
+                                                                                                                                                                                                                                        browser
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalSampleInvestigate`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Investigate
+                                                                                                                                                                                                                                        sample
+                                                                                                                                                                                                                                        bank
+                                                                                                                                                                                                                                        under
+                                                                                                                                                                                                                                        cursor
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalLooperRecord`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Record
+                                                                                                                                                                                                                                        loop
+                                                                                                                                                                                                                                        on
+                                                                                                                                                                                                                                        current
+                                                                                                                                                                                                                                        orbit
+                                                                                                                                                                                                                                        (count
+                                                                                                                                                                                                                                        =
+                                                                                                                                                                                                                                        orbit,
+                                                                                                                                                                                                                                        default
+                                                                                                                                                                                                                                        d1)
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalLooperOverdub`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Overdub
+                                                                                                                                                                                                                                        loop
+                                                                                                                                                                                                                                        on
+                                                                                                                                                                                                                                        current
+                                                                                                                                                                                                                                        orbit
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalLooperFree
+                                                                                                                                                                                                                                        {n}`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Free
+                                                                                                                                                                                                                                        loop
+                                                                                                                                                                                                                                        buffer
+                                                                                                                                                                                                                                        n
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalLooperFreeAll`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Free
+                                                                                                                                                                                                                                        all
+                                                                                                                                                                                                                                        loop
+                                                                                                                                                                                                                                        buffers
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalLooperPersist
+                                                                                                                                                                                                                                        {name}`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Persist
+                                                                                                                                                                                                                                        loops
+                                                                                                                                                                                                                                        to
+                                                                                                                                                                                                                                        disk
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalLooperMode
+                                                                                                                                                                                                                                        {replace\|overdub}`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Set
+                                                                                                                                                                                                                                        looper
+                                                                                                                                                                                                                                        mode
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalLooperInput
+                                                                                                                                                                                                                                        {port}`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Set
+                                                                                                                                                                                                                                        looper
+                                                                                                                                                                                                                                        input
+                                                                                                                                                                                                                                        port
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalMute
+                                                                                                                                                                                                                                        {n\|name}`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Mute
+                                                                                                                                                                                                                                        all
+                                                                                                                                                                                                                                        /
+                                                                                                                                                                                                                                        orbit
+                                                                                                                                                                                                                                        n
+                                                                                                                                                                                                                                        /
+                                                                                                                                                                                                                                        named
+                                                                                                                                                                                                                                        pattern
+                                                                                                                                                                                                                                        via
+                                                                                                                                                                                                                                        OSC
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalUnmute
+                                                                                                                                                                                                                                        {n\|name}`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Unmute
+                                                                                                                                                                                                                                        all
+                                                                                                                                                                                                                                        /
+                                                                                                                                                                                                                                        orbit
+                                                                                                                                                                                                                                        n
+                                                                                                                                                                                                                                        /
+                                                                                                                                                                                                                                        named
+                                                                                                                                                                                                                                        pattern
+                                                                                                                                                                                                                                        via
+                                                                                                                                                                                                                                        OSC
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalSolo
+                                                                                                                                                                                                                                        {n\|name}`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Solo
+                                                                                                                                                                                                                                        orbit
+                                                                                                                                                                                                                                        n
+                                                                                                                                                                                                                                        /
+                                                                                                                                                                                                                                        named
+                                                                                                                                                                                                                                        pattern
+                                                                                                                                                                                                                                        via
+                                                                                                                                                                                                                                        OSC
+                                                                                                                                                                                                                                        (all
+                                                                                                                                                                                                                                        silent
+                                                                                                                                                                                                                                        first)
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalUnsolo
+                                                                                                                                                                                                                                        {n\|name}`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Unsolo
+                                                                                                                                                                                                                                        orbit
+                                                                                                                                                                                                                                        n
+                                                                                                                                                                                                                                        /
+                                                                                                                                                                                                                                        named
+                                                                                                                                                                                                                                        pattern
+                                                                                                                                                                                                                                        via
+                                                                                                                                                                                                                                        OSC
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalCtrlSend
+                                                                                                                                                                                                                                        {key}
+                                                                                                                                                                                                                                        {value}`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Send
+                                                                                                                                                                                                                                        a
+                                                                                                                                                                                                                                        `/ctrl`
+                                                                                                                                                                                                                                        value
+                                                                                                                                                                                                                                        to
+                                                                                                                                                                                                                                        Tidal
+                                                                                                                                                                                                                                        (e.g.
+                                                                                                                                                                                                                                        `amp
+                                                                                                                                                                                                                                        0.4`)
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalCtrlList`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        List
+                                                                                                                                                                                                                                        received
+                                                                                                                                                                                                                                        `/ctrl`
+                                                                                                                                                                                                                                        values
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        `:TidalCtrlClear`
+                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                        Clear
+                                                                                                                                                                                                                                        received
+                                                                                                                                                                                                                                        `/ctrl`
+                                                                                                                                                                                                                                        values
+                                                                                                                                                                                                                                        |
 
-## Usage
+                                                                                                                                                                                                                                        ##
+                                                                                                                                                                                                                                        Usage
 
-Open a `.tidal` file, put a pattern on one line, and evaluate with `<S-CR>`.
-`.scd` (SuperCollider) buffers route the same send keys to sclang. With
-`auto_launch = true` (default) the first send boots GHCi and SuperCollider
-automatically; sends are queued until each interpreter is ready, so a slow boot
-never drops evaluation.
+                                                                                                                                                                                                                                        Open
+                                                                                                                                                                                                                                        a
+                                                                                                                                                                                                                                        `.tidal`
+                                                                                                                                                                                                                                        file,
+                                                                                                                                                                                                                                        put
+                                                                                                                                                                                                                                        a
+                                                                                                                                                                                                                                        pattern
+                                                                                                                                                                                                                                        on
+                                                                                                                                                                                                                                        one
+                                                                                                                                                                                                                                        line,
+                                                                                                                                                                                                                                        and
+                                                                                                                                                                                                                                        evaluate
+                                                                                                                                                                                                                                        with
+                                                                                                                                                                                                                                        `<S-CR>`.
+                                                                                                                                                                                                                                            `.scd`
+                                                                                                                                                                                                                                            (SuperCollider)
+                                                                                                                                                                                                                                            buffers
+                                                                                                                                                                                                                                            route
+                                                                                                                                                                                                                                            the
+                                                                                                                                                                                                                                            same
+                                                                                                                                                                                                                                            send
+                                                                                                                                                                                                                                            keys
+                                                                                                                                                                                                                                            to
+                                                                                                                                                                                                                                            sclang.
+                                                                                                                                                                                                                                            With
+                                                                                                                                                                                                                                            `auto_launch
+                                                                                                                                                                                                                                            =
+                                                                                                                                                                                                                                            true`
+                                                                                                                                                                                                                                            (default)
+                                                                                                                                                                                                                                            the
+                                                                                                                                                                                                                                            first
+                                                                                                                                                                                                                                            send
+                                                                                                                                                                                                                                            boots
+                                                                                                                                                                                                                                            GHCi
+                                                                                                                                                                                                                                            and
+                                                                                                                                                                                                                                            SuperCollider
+                                                                                                                                                                                                                                            automatically;
+                                                                                                                                                                                                                                            sends
+                                                                                                                                                                                                                                            are
+                                                                                                                                                                                                                                            queued
+                                                                                                                                                                                                                                            until
+                                                                                                                                                                                                                                            each
+                                                                                                                                                                                                                                            interpreter
+                                                                                                                                                                                                                                            is
+                                                                                                                                                                                                                                            ready,
+                                                                                                                                                                                                                                            so
+                                                                                                                                                                                                                                            a
+                                                                                                                                                                                                                                            slow
+                                                                                                                                                                                                                                            boot
+                                                                                                                                                                                                                                            never
+                                                                                                                                                                                                                                            drops
+                                                                                                                                                                                                                                            evaluation.
 
-For a step-by-step walkthrough see the [tutorial](docs/tutorial.md).
+                                                                                                                                                                                                                                            For
+                                                                                                                                                                                                                                            a
+                                                                                                                                                                                                                                            step-by-step
+                                                                                                                                                                                                                                            walkthrough
+                                                                                                                                                                                                                                            see
+                                                                                                                                                                                                                                            the
+                                                                                                                                                                                                                                            [tutorial](docs/tutorial.md).
 
-## Feature details
+                                                                                                                                                                                                                                            ##
+                                                                                                                                                                                                                                            Feature
+                                                                                                                                                                                                                                            details
 
-Full explanations of each feature (with usage, configuration, and internal details)
-live in the [feature reference](docs/features.md). Quick index:
+                                                                                                                                                                                                                                            Full
+                                                                                                                                                                                                                                            explanations
+                                                                                                                                                                                                                                            of
+                                                                                                                                                                                                                                            each
+                                                                                                                                                                                                                                            feature
+                                                                                                                                                                                                                                            (with
+                                                                                                                                                                                                                                            usage,
+                                                                                                                                                                                                                                            configuration,
+                                                                                                                                                                                                                                            and
+                                                                                                                                                                                                                                            internal
+                                                                                                                                                                                                                                            details)
+                                                                                                                                                                                                                                            live
+                                                                                                                                                                                                                                            in
+                                                                                                                                                                                                                                            the
+                                                                                                                                                                                                                                            [feature
+                                                                                                                                                                                                                                            reference](docs/features.md).
+                                                                                                                                                                                                                                            Quick
+                                                                                                                                                                                                                                            index:
 
-| Feature                          | Docs section                                          | Toggle / key |
-|----------------------------------|-------------------------------------------------------|--------------|
-| Code evaluation                  | [Code Evaluation](docs/features.md#1-code-evaluation) | `<S-CR>`     |
-| Auto-launch & boot management    | [Feature #2](docs/features.md#2-auto-launch--boot-management) | `:TidalLaunch` |
-| Visual feedback                  | [Feature #3](docs/features.md#3-visual-feedback)      | —            |
-| OSC integration (mute/solo/hush) | [Feature #4](docs/features.md#4-osc-integration)      | `<leader>o`  |
-| Beat grid visualizer             | [Feature #5](docs/features.md#5-beat-grid-visualizer) | `<leader>v`  |
-| Statusline component             | [Feature #6](docs/features.md#6-statusline-component) | —            |
-| Tap tempo                        | [Feature #7](docs/features.md#7-tap-tempo)            | `<leader>t`  |
-| Sample browser                   | [Feature #8](docs/features.md#8-sample-browser)       | `<leader>a`  |
-| Autocomplete                     | [Feature #9](docs/features.md#9-autocomplete)         | —            |
-| MIDI controllers / `/ctrl`       | [Feature #10](docs/features.md#10-midi-controllers--ctrl-values) | `:TidalCtrl{List,Send}` |
-| SuperCollider tools              | [Feature #11](docs/features.md#11-supercollider-tools) | `<F1>-<F3>`  |
-| TidalLooper (live sampling)      | [Feature #12](docs/features.md#12-tidallooper-live-sampling) | `<leader>lr` |
-| Audio setup (JACK)               | [Feature #13](docs/features.md#13-audio-setup-jack)   | —            |
-| Boot files                       | [Feature #14](docs/features.md#14-boot-files)         | —            |
-| Filetype detection               | [Feature #15](docs/features.md#15-filetype-detection) | —            |
+                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                            Feature
+                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                            Docs
+                                                                                                                                                                                                                                            section
+                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                            Toggle
+                                                                                                                                                                                                                                            /
+                                                                                                                                                                                                                                            key
+                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                            --------------------------------
+                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                            ----------------------------------------------------------------
+                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                            -----------------------
+                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                            Code
+                                                                                                                                                                                                                                            evaluation
+                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                            [Code
+                                                                                                                                                                                                                                            Evaluation](docs/features.md#1-code-evaluation)
+                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                            `<S-CR>`
+                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                Auto-launch
+                                                                                                                                                                                                                                                &
+                                                                                                                                                                                                                                                boot
+                                                                                                                                                                                                                                                management
+                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                [Feature
+                                                                                                                                                                                                                                                #2](docs/features.md#2-auto-launch--boot-management)
+                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                `:TidalLaunch`
+                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                Visual
+                                                                                                                                                                                                                                                feedback
+                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                [Feature
+                                                                                                                                                                                                                                                #3](docs/features.md#3-visual-feedback)
+                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                —
+                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                OSC
+                                                                                                                                                                                                                                                integration
+                                                                                                                                                                                                                                                (mute/solo/hush)
+                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                [Feature
+                                                                                                                                                                                                                                                #4](docs/features.md#4-osc-integration)
+                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                `
+                                                                                                                                                                                                                                                <leader>
+                                                                                                                                                                                                                                                    o`
+                                                                                                                                                                                                                                                    |
+                                                                                                                                                                                                                                                    |
+                                                                                                                                                                                                                                                    Beat
+                                                                                                                                                                                                                                                    grid
+                                                                                                                                                                                                                                                    visualizer
+                                                                                                                                                                                                                                                    |
+                                                                                                                                                                                                                                                    [Feature
+                                                                                                                                                                                                                                                    #5](docs/features.md#5-beat-grid-visualizer)
+                                                                                                                                                                                                                                                    |
+                                                                                                                                                                                                                                                    `
+                                                                                                                                                                                                                                                    <leader>
+                                                                                                                                                                                                                                                        v`
+                                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                                        Statusline
+                                                                                                                                                                                                                                                        component
+                                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                                        [Feature
+                                                                                                                                                                                                                                                        #6](docs/features.md#6-statusline-component)
+                                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                                        —
+                                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                                        Tap
+                                                                                                                                                                                                                                                        tempo
+                                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                                        [Feature
+                                                                                                                                                                                                                                                        #7](docs/features.md#7-tap-tempo)
+                                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                                        `
+                                                                                                                                                                                                                                                        <leader>
+                                                                                                                                                                                                                                                            t`
+                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                            Sample
+                                                                                                                                                                                                                                                            browser
+                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                            [Feature
+                                                                                                                                                                                                                                                            #8](docs/features.md#8-sample-browser)
+                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                            `
+                                                                                                                                                                                                                                                            <leader>
+                                                                                                                                                                                                                                                                a`
+                                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                                Autocomplete
+                                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                                [Feature
+                                                                                                                                                                                                                                                                #9](docs/features.md#9-autocomplete)
+                                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                                —
+                                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                                MIDI
+                                                                                                                                                                                                                                                                controllers
+                                                                                                                                                                                                                                                                /
+                                                                                                                                                                                                                                                                `/ctrl`
+                                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                                [Feature
+                                                                                                                                                                                                                                                                #10](docs/features.md#10-midi-controllers--ctrl-values)
+                                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                                `:TidalCtrl{List,Send}`
+                                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                                SuperCollider
+                                                                                                                                                                                                                                                                tools
+                                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                                [Feature
+                                                                                                                                                                                                                                                                #11](docs/features.md#11-supercollider-tools)
+                                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                                `
+                                                                                                                                                                                                                                                                <F1>-
+                                                                                                                                                                                                                                                                    <F3>`
+                                                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                                                        TidalLooper
+                                                                                                                                                                                                                                                                        (live
+                                                                                                                                                                                                                                                                        sampling)
+                                                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                                                        [Feature
+                                                                                                                                                                                                                                                                        #12](docs/features.md#12-tidallooper-live-sampling)
+                                                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                                                        `
+                                                                                                                                                                                                                                                                        <leader>
+                                                                                                                                                                                                                                                                            lr`
+                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                            Audio
+                                                                                                                                                                                                                                                                            setup
+                                                                                                                                                                                                                                                                            (JACK)
+                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                            [Feature
+                                                                                                                                                                                                                                                                            #13](docs/features.md#13-audio-setup-jack)
+                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                            —
+                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                            Boot
+                                                                                                                                                                                                                                                                            files
+                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                            [Feature
+                                                                                                                                                                                                                                                                            #14](docs/features.md#14-boot-files)
+                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                            —
+                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                            Filetype
+                                                                                                                                                                                                                                                                            detection
+                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                            [Feature
+                                                                                                                                                                                                                                                                            #15](docs/features.md#15-filetype-detection)
+                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                            —
+                                                                                                                                                                                                                                                                            |
 
-## Looper (TidalLooper)
+                                                                                                                                                                                                                                                                            ##
+                                                                                                                                                                                                                                                                            Looper
+                                                                                                                                                                                                                                                                            (TidalLooper)
 
-The plugin integrates [thgrund/tidal-looper](https://github.com/thgrund/tidal-looper)
-for live sampling via SuperDirt. Enable it with `boot.looper.enabled = true`.
+                                                                                                                                                                                                                                                                            The
+                                                                                                                                                                                                                                                                            plugin
+                                                                                                                                                                                                                                                                            integrates
+                                                                                                                                                                                                                                                                            [thgrund/tidal-looper](https://github.com/thgrund/tidal-looper)
+                                                                                                                                                                                                                                                                            for
+                                                                                                                                                                                                                                                                            live
+                                                                                                                                                                                                                                                                            sampling
+                                                                                                                                                                                                                                                                            via
+                                                                                                                                                                                                                                                                            SuperDirt.
+                                                                                                                                                                                                                                                                            Enable
+                                                                                                                                                                                                                                                                            it
+                                                                                                                                                                                                                                                                            with
+                                                                                                                                                                                                                                                                            `boot.looper.enabled
+                                                                                                                                                                                                                                                                            =
+                                                                                                                                                                                                                                                                            true`.
 
-When enabled, the boot process starts SuperDirt with an explicit `~dirt` variable and
-loads the looper synths (`rlooper`, `olooper`, `slooper`, `freeLoops`, `persistLoops`).
+                                                                                                                                                                                                                                                                            When
+                                                                                                                                                                                                                                                                            enabled,
+                                                                                                                                                                                                                                                                            the
+                                                                                                                                                                                                                                                                            boot
+                                                                                                                                                                                                                                                                            process
+                                                                                                                                                                                                                                                                            starts
+                                                                                                                                                                                                                                                                            SuperDirt
+                                                                                                                                                                                                                                                                            with
+                                                                                                                                                                                                                                                                            an
+                                                                                                                                                                                                                                                                            explicit
+                                                                                                                                                                                                                                                                            `~dirt`
+                                                                                                                                                                                                                                                                            variable
+                                                                                                                                                                                                                                                                            and
+                                                                                                                                                                                                                                                                            loads
+                                                                                                                                                                                                                                                                            the
+                                                                                                                                                                                                                                                                            looper
+                                                                                                                                                                                                                                                                            synths
+                                                                                                                                                                                                                                                                            (`rlooper`,
+                                                                                                                                                                                                                                                                            `olooper`,
+                                                                                                                                                                                                                                                                            `slooper`,
+                                                                                                                                                                                                                                                                            `freeLoops`,
+                                                                                                                                                                                                                                                                            `persistLoops`).
 
-### Basic usage
+                                                                                                                                                                                                                                                                            ###
+                                                                                                                                                                                                                                                                            Basic
+                                                                                                                                                                                                                                                                            usage
 
-Once the looper is loaded, evaluate these patterns in a `.tidal` buffer:
+                                                                                                                                                                                                                                                                            Once
+                                                                                                                                                                                                                                                                            the
+                                                                                                                                                                                                                                                                            looper
+                                                                                                                                                                                                                                                                            is
+                                                                                                                                                                                                                                                                            loaded,
+                                                                                                                                                                                                                                                                            evaluate
+                                                                                                                                                                                                                                                                            these
+                                                                                                                                                                                                                                                                            patterns
+                                                                                                                                                                                                                                                                            in
+                                                                                                                                                                                                                                                                            a
+                                                                                                                                                                                                                                                                            `.tidal`
+                                                                                                                                                                                                                                                                            buffer:
 
-```haskell
--- Record one cycle to buffer 0 on orbit 1
-d1 $ s "rlooper"
+                                                                                                                                                                                                                                                                            ```haskell
+                                                                                                                                                                                                                                                                            --
+                                                                                                                                                                                                                                                                            Record
+                                                                                                                                                                                                                                                                            one
+                                                                                                                                                                                                                                                                            cycle
+                                                                                                                                                                                                                                                                            to
+                                                                                                                                                                                                                                                                            buffer
+                                                                                                                                                                                                                                                                            0
+                                                                                                                                                                                                                                                                            on
+                                                                                                                                                                                                                                                                            orbit
+                                                                                                                                                                                                                                                                            1
+                                                                                                                                                                                                                                                                            d1
+                                                                                                                                                                                                                                                                            $
+                                                                                                                                                                                                                                                                            s
+                                                                                                                                                                                                                                                                            "rlooper"
 
--- Play back the loop
-d1 $ s "loop"
+                                                                                                                                                                                                                                                                            --
+                                                                                                                                                                                                                                                                            Play
+                                                                                                                                                                                                                                                                            back
+                                                                                                                                                                                                                                                                            the
+                                                                                                                                                                                                                                                                            loop
+                                                                                                                                                                                                                                                                            d1
+                                                                                                                                                                                                                                                                            $
+                                                                                                                                                                                                                                                                            s
+                                                                                                                                                                                                                                                                            "loop"
 
--- Overdub onto buffer 0
-d1 $ s "olooper"
+                                                                                                                                                                                                                                                                            --
+                                                                                                                                                                                                                                                                            Overdub
+                                                                                                                                                                                                                                                                            onto
+                                                                                                                                                                                                                                                                            buffer
+                                                                                                                                                                                                                                                                            0
+                                                                                                                                                                                                                                                                            d1
+                                                                                                                                                                                                                                                                            $
+                                                                                                                                                                                                                                                                            s
+                                                                                                                                                                                                                                                                            "olooper"
 
--- Cycle through buffers
-d1 $ s "rlooper" # n "<0 1 2 3>"
-d1 $ s "loop" # n "[0,1,2,3]"
+                                                                                                                                                                                                                                                                            --
+                                                                                                                                                                                                                                                                            Cycle
+                                                                                                                                                                                                                                                                            through
+                                                                                                                                                                                                                                                                            buffers
+                                                                                                                                                                                                                                                                            d1
+                                                                                                                                                                                                                                                                            $
+                                                                                                                                                                                                                                                                            s
+                                                                                                                                                                                                                                                                            "rlooper"
+                                                                                                                                                                                                                                                                            #
+                                                                                                                                                                                                                                                                            n
+                                                                                                                                                                                                                                                                            "
+                                                                                                                                                                                                                                                                            <0 1 2
+                                                                                                                                                                                                                                                                                3>
+                                                                                                                                                                                                                                                                                "
+                                                                                                                                                                                                                                                                                d1
+                                                                                                                                                                                                                                                                                $
+                                                                                                                                                                                                                                                                                s
+                                                                                                                                                                                                                                                                                "loop"
+                                                                                                                                                                                                                                                                                #
+                                                                                                                                                                                                                                                                                n
+                                                                                                                                                                                                                                                                                "[0,1,2,3]"
 
--- Free all loop buffers
-once $ s "freeLoops"
+                                                                                                                                                                                                                                                                                --
+                                                                                                                                                                                                                                                                                Free
+                                                                                                                                                                                                                                                                                all
+                                                                                                                                                                                                                                                                                loop
+                                                                                                                                                                                                                                                                                buffers
+                                                                                                                                                                                                                                                                                once
+                                                                                                                                                                                                                                                                                $
+                                                                                                                                                                                                                                                                                s
+                                                                                                                                                                                                                                                                                "freeLoops"
 
--- Persist loops to disk
-once $ s "persistLoops" # lname "loop"
-```
+                                                                                                                                                                                                                                                                                --
+                                                                                                                                                                                                                                                                                Persist
+                                                                                                                                                                                                                                                                                loops
+                                                                                                                                                                                                                                                                                to
+                                                                                                                                                                                                                                                                                disk
+                                                                                                                                                                                                                                                                                once
+                                                                                                                                                                                                                                                                                $
+                                                                                                                                                                                                                                                                                s
+                                                                                                                                                                                                                                                                                "persistLoops"
+                                                                                                                                                                                                                                                                                #
+                                                                                                                                                                                                                                                                                lname
+                                                                                                                                                                                                                                                                                "loop"
+                                                                                                                                                                                                                                                                                ```
 
-### Keymaps
+                                                                                                                                                                                                                                                                                ###
+                                                                                                                                                                                                                                                                                Keymaps
 
-| Key          | Action                                                                             |
-| ------------ | ---------------------------------------------------------------------------------- |
-| `<leader>lr` | Record loop on current orbit (use count prefix for orbit, e.g. `2<leader>lr` = d2) |
-| `<leader>lo` | Overdub loop on current orbit                                                      |
-| `<leader>lf` | Free loop buffer (use count prefix for buffer number)                              |
-| `<leader>lF` | Free all loop buffers                                                              |
-| `<leader>lm` | Cycle looper mode (replace ↔ overdub)                                             |
-| `<leader>lp` | Persist loops to disk                                                              |
+                                                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                                                Key
+                                                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                                                Action
+                                                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                                                ------------
+                                                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                                                ----------------------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                                                `
+                                                                                                                                                                                                                                                                                <leader>
+                                                                                                                                                                                                                                                                                    lr`
+                                                                                                                                                                                                                                                                                    |
+                                                                                                                                                                                                                                                                                    Record
+                                                                                                                                                                                                                                                                                    loop
+                                                                                                                                                                                                                                                                                    on
+                                                                                                                                                                                                                                                                                    current
+                                                                                                                                                                                                                                                                                    orbit
+                                                                                                                                                                                                                                                                                    (use
+                                                                                                                                                                                                                                                                                    count
+                                                                                                                                                                                                                                                                                    prefix
+                                                                                                                                                                                                                                                                                    for
+                                                                                                                                                                                                                                                                                    orbit,
+                                                                                                                                                                                                                                                                                    e.g.
+                                                                                                                                                                                                                                                                                    `2
+                                                                                                                                                                                                                                                                                    <leader>
+                                                                                                                                                                                                                                                                                        lr`
+                                                                                                                                                                                                                                                                                        =
+                                                                                                                                                                                                                                                                                        d2)
+                                                                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                                                                        `
+                                                                                                                                                                                                                                                                                        <leader>
+                                                                                                                                                                                                                                                                                            lo`
+                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                            Overdub
+                                                                                                                                                                                                                                                                                            loop
+                                                                                                                                                                                                                                                                                            on
+                                                                                                                                                                                                                                                                                            current
+                                                                                                                                                                                                                                                                                            orbit
+                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                            `
+                                                                                                                                                                                                                                                                                            <leader>
+                                                                                                                                                                                                                                                                                                lf`
+                                                                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                                                                Free
+                                                                                                                                                                                                                                                                                                loop
+                                                                                                                                                                                                                                                                                                buffer
+                                                                                                                                                                                                                                                                                                (use
+                                                                                                                                                                                                                                                                                                count
+                                                                                                                                                                                                                                                                                                prefix
+                                                                                                                                                                                                                                                                                                for
+                                                                                                                                                                                                                                                                                                buffer
+                                                                                                                                                                                                                                                                                                number)
+                                                                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                                                                |
+                                                                                                                                                                                                                                                                                                `
+                                                                                                                                                                                                                                                                                                <leader>
+                                                                                                                                                                                                                                                                                                    lF`
+                                                                                                                                                                                                                                                                                                    |
+                                                                                                                                                                                                                                                                                                    Free
+                                                                                                                                                                                                                                                                                                    all
+                                                                                                                                                                                                                                                                                                    loop
+                                                                                                                                                                                                                                                                                                    buffers
+                                                                                                                                                                                                                                                                                                    |
+                                                                                                                                                                                                                                                                                                    |
+                                                                                                                                                                                                                                                                                                    `
+                                                                                                                                                                                                                                                                                                    <leader>
+                                                                                                                                                                                                                                                                                                        lm`
+                                                                                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                                                                                        Cycle
+                                                                                                                                                                                                                                                                                                        looper
+                                                                                                                                                                                                                                                                                                        mode
+                                                                                                                                                                                                                                                                                                        (replace
+                                                                                                                                                                                                                                                                                                        ↔
+                                                                                                                                                                                                                                                                                                        overdub)
+                                                                                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                                                                                        `
+                                                                                                                                                                                                                                                                                                        <leader>
+                                                                                                                                                                                                                                                                                                            lp`
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            Persist
+                                                                                                                                                                                                                                                                                                            loops
+                                                                                                                                                                                                                                                                                                            to
+                                                                                                                                                                                                                                                                                                            disk
+                                                                                                                                                                                                                                                                                                            |
 
-### Commands
+                                                                                                                                                                                                                                                                                                            ###
+                                                                                                                                                                                                                                                                                                            Commands
 
-| Command                               | Description                              |
-| ------------------------------------- | ---------------------------------------- |
-| `:TidalLooperRecord`                  | Record loop (count = orbit, default d1)  |
-| `:TidalLooperOverdub`                 | Overdub loop (count = orbit, default d1) |
-| `:TidalLooperFree {n}`                | Free loop buffer n                       |
-| `:TidalLooperFreeAll`                 | Free all loop buffers                    |
-| `:TidalLooperPersist {name}`          | Persist loops to disk                    |
-| `:TidalLooperMode {replace\|overdub}` | Set looper mode                          |
-| `:TidalLooperInput {port}`            | Set looper input port                    |
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            Command
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            Description
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            -------------------------------------
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            ----------------------------------------
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            `:TidalLooperRecord`
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            Record
+                                                                                                                                                                                                                                                                                                            loop
+                                                                                                                                                                                                                                                                                                            (count
+                                                                                                                                                                                                                                                                                                            =
+                                                                                                                                                                                                                                                                                                            orbit,
+                                                                                                                                                                                                                                                                                                            default
+                                                                                                                                                                                                                                                                                                            d1)
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            `:TidalLooperOverdub`
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            Overdub
+                                                                                                                                                                                                                                                                                                            loop
+                                                                                                                                                                                                                                                                                                            (count
+                                                                                                                                                                                                                                                                                                            =
+                                                                                                                                                                                                                                                                                                            orbit,
+                                                                                                                                                                                                                                                                                                            default
+                                                                                                                                                                                                                                                                                                            d1)
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            `:TidalLooperFree
+                                                                                                                                                                                                                                                                                                            {n}`
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            Free
+                                                                                                                                                                                                                                                                                                            loop
+                                                                                                                                                                                                                                                                                                            buffer
+                                                                                                                                                                                                                                                                                                            n
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            `:TidalLooperFreeAll`
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            Free
+                                                                                                                                                                                                                                                                                                            all
+                                                                                                                                                                                                                                                                                                            loop
+                                                                                                                                                                                                                                                                                                            buffers
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            `:TidalLooperPersist
+                                                                                                                                                                                                                                                                                                            {name}`
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            Persist
+                                                                                                                                                                                                                                                                                                            loops
+                                                                                                                                                                                                                                                                                                            to
+                                                                                                                                                                                                                                                                                                            disk
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            `:TidalLooperMode
+                                                                                                                                                                                                                                                                                                            {replace\|overdub}`
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            Set
+                                                                                                                                                                                                                                                                                                            looper
+                                                                                                                                                                                                                                                                                                            mode
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            `:TidalLooperInput
+                                                                                                                                                                                                                                                                                                            {port}`
+                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                            Set
+                                                                                                                                                                                                                                                                                                            looper
+                                                                                                                                                                                                                                                                                                            input
+                                                                                                                                                                                                                                                                                                            port
+                                                                                                                                                                                                                                                                                                            |
 
-## Related
+                                                                                                                                                                                                                                                                                                            ##
+                                                                                                                                                                                                                                                                                                            Related
 
-For the built-in help run `:h tidal-ripple`.
+                                                                                                                                                                                                                                                                                                            For
+                                                                                                                                                                                                                                                                                                            the
+                                                                                                                                                                                                                                                                                                            built-in
+                                                                                                                                                                                                                                                                                                            help
+                                                                                                                                                                                                                                                                                                            run
+                                                                                                                                                                                                                                                                                                            `:h
+                                                                                                                                                                                                                                                                                                            tidal-ripple`.
 
-- [grddavies/tidal.nvim](https://github.com/grddavies/tidal.nvim) — original fork base
-- [jbfits/cycles.nvim](https://github.com/jbfits/cycles.nvim) — SC visual tools
-- [tidalcycles/vim-tidal](https://github.com/tidalcycles/vim-tidal) — original Vim plugin
+                                                                                                                                                                                                                                                                                                            -
+                                                                                                                                                                                                                                                                                                            [grddavies/tidal.nvim](https://github.com/grddavies/tidal.nvim)
+                                                                                                                                                                                                                                                                                                            —
+                                                                                                                                                                                                                                                                                                            original
+                                                                                                                                                                                                                                                                                                            fork
+                                                                                                                                                                                                                                                                                                            base
+                                                                                                                                                                                                                                                                                                            -
+                                                                                                                                                                                                                                                                                                            [jbfits/cycles.nvim](https://github.com/jbfits/cycles.nvim)
+                                                                                                                                                                                                                                                                                                            —
+                                                                                                                                                                                                                                                                                                            SC
+                                                                                                                                                                                                                                                                                                            visual
+                                                                                                                                                                                                                                                                                                            tools
+                                                                                                                                                                                                                                                                                                            -
+                                                                                                                                                                                                                                                                                                            [tidalcycles/vim-tidal](https://github.com/tidalcycles/vim-tidal)
+                                                                                                                                                                                                                                                                                                            —
+                                                                                                                                                                                                                                                                                                            original
+                                                                                                                                                                                                                                                                                                            Vim
+                                                                                                                                                                                                                                                                                                            plugin
 
-## TODO
+                                                                                                                                                                                                                                                                                                            ##
+                                                                                                                                                                                                                                                                                                            TODO
 
-- [ ] Test looper integration end-to-end
-- [ ] Support multiple time signatures across bars in a single tap tempo session
-- [ ] Auto-write a TidalCycles orbit pattern to the main buffer based on detected time signature
+                                                                                                                                                                                                                                                                                                            -
+                                                                                                                                                                                                                                                                                                            [
+                                                                                                                                                                                                                                                                                                            ]
+                                                                                                                                                                                                                                                                                                            Test
+                                                                                                                                                                                                                                                                                                            looper
+                                                                                                                                                                                                                                                                                                            integration
+                                                                                                                                                                                                                                                                                                            end-to-end
+                                                                                                                                                                                                                                                                                                            -
+                                                                                                                                                                                                                                                                                                            [
+                                                                                                                                                                                                                                                                                                            ]
+                                                                                                                                                                                                                                                                                                            Support
+                                                                                                                                                                                                                                                                                                            multiple
+                                                                                                                                                                                                                                                                                                            time
+                                                                                                                                                                                                                                                                                                            signatures
+                                                                                                                                                                                                                                                                                                            across
+                                                                                                                                                                                                                                                                                                            bars
+                                                                                                                                                                                                                                                                                                            in
+                                                                                                                                                                                                                                                                                                            a
+                                                                                                                                                                                                                                                                                                            single
+                                                                                                                                                                                                                                                                                                            tap
+                                                                                                                                                                                                                                                                                                            tempo
+                                                                                                                                                                                                                                                                                                            session
+                                                                                                                                                                                                                                                                                                            -
+                                                                                                                                                                                                                                                                                                            [
+                                                                                                                                                                                                                                                                                                            ]
+                                                                                                                                                                                                                                                                                                            Auto-write
+                                                                                                                                                                                                                                                                                                            a
+                                                                                                                                                                                                                                                                                                            TidalCycles
+                                                                                                                                                                                                                                                                                                            orbit
+                                                                                                                                                                                                                                                                                                            pattern
+                                                                                                                                                                                                                                                                                                            to
+                                                                                                                                                                                                                                                                                                            the
+                                                                                                                                                                                                                                                                                                            main
+                                                                                                                                                                                                                                                                                                            buffer
+                                                                                                                                                                                                                                                                                                            based
+                                                                                                                                                                                                                                                                                                            on
+                                                                                                                                                                                                                                                                                                            detected
+                                                                                                                                                                                                                                                                                                            time
+                                                                                                                                                                                                                                                                                                            signature
