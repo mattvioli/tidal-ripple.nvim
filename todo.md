@@ -15,7 +15,7 @@
 - [x] Blockwise (Ctrl-V) visual sends implemented
 - [x] OSC debug logging gated behind `osc.debug` (default off)
 - [x] `send_visual` aligned to function callback; redundant filetype set removed
-- [x] **OSC output to Tidal (port 6010)** — mute/solo/hush via OSC instead of code strings
+q- [x] **OSC output to Tidal (port 6010)** — mute/solo/hush via OSC instead of code strings
 - [x] **`/ctrl` MIDI controller input** — receives hardware fader/encoder values as live signals
 - [x] **Event highlighting** — plays sent lines in sync with audio timing from OSC
 - [x] **Repo-name consistency** — GitHub repo renamed to `mattvioli/tidal-ripple.nvim`, install refs updated
@@ -23,9 +23,13 @@
 
 ## Remaining (nice-to-have)
 
-- [ ] \*\*Add highlighting on the line that is played. E.G. d2 $ sound "bd ~ sn ~" but the bd is highilighted when it's
-played, then the ~ etc
-- [ ] \*\* Visualizer bug - The first circle should appear when the change of colour happens, not one frame after``
+- [ ] **Add highlighting on the line that is played.** E.G. `d2 $ sound "bd ~ sn ~"` with the `bd` highlighted when it's
+played, then the `~` etc — OSC-sound-driven, matches mini-notation variants (`bd*2`, `bd:1`), rest sweep via timer.
+- [ ] **Visualizer bug** — first circle spawns at age 0, at the cycle phase of the event, and the orbit label (`2 │`)
+flips to the newest event's colour on the same paint; removed the global anim_offset sweep in favour of
+per-event age-based position.
+- [ ] \*\* Market bug - Play marker sits next to any orbit that has been sent, so it'll appear after each d2 that is
+sent, instead of just the last sent to that orbit
 - [ ] **Looper end-to-end test** — `iterations.md` claims implemented but unverified.
 - [ ] **Pattern transition helpers** — editor-side shortcuts for `xfade`, `fadeIn`, `clutch`, `interpolate`, `jumpIn`.
 Wrap current block with `fadeIn 8 $` etc.
@@ -38,7 +42,7 @@ Wrap current block with `fadeIn 8 $` etc.
 - [ ] **`:checkhealth tidal`** — verify JACK, GHCi, sclang, OSC connectivity.
 - [ ] **Auto-add to sample bank** — automatically detect and add new samples to the sample bank data.
 - [ ] \*\*Tap can insert example pattern, EG "~ ~ ~ ~" for 4/4
-- [ ] \*\*Tap-multi timesigs in pattern
+- [ ] \*\*Tap-multi timesigs in patternq
 
 ## Notes
 

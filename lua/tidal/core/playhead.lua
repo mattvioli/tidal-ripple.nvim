@@ -33,12 +33,16 @@ local function update_marker(m, hl_group)
   if not m or not vim.api.nvim_buf_is_valid(m.bufnr) then
     return
   end
-  vim.api.nvim_buf_set_extmark(m.bufnr, config.playhead_ns, m.id, m.line, 0, {
+  pcall(vim.api.nvim_buf_del_extmark, m.bufnr, config.playhead_ns, m.id)
+  local id = vim.api.nvim_buf_set_extmark(m.bufnr, config.playhead_ns, m.line, 0, {
     sign_text = "▶",
     sign_hl_group = hl_group,
     priority = vim.hl.priorities.user + 10,
     strict = false,
   })
+  if id then
+    m.id = id
+  end
 end
 
 local function reset_flash(m)

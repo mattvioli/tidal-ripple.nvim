@@ -38,6 +38,13 @@ make test          # full suite, bounded concurrency (TEST_JOBS, default 4)
 ## Conventions
 
 - Neovim plugin. Requires `nvim >= 0.10`. Uses `vim.uv` (not `vim.loop`).
+- **Use `vim.schedule(...)`** (wrap in `vim.schedule_wrap` for callbacks) whenever
+  Neovim API functions (e.g. `nvim_buf_*`, `nvim_notify`, `nvim_buf_set_extmark`)
+  are invoked from a libuv callback or other fast-event context. This includes
+  `vim.uv` timers/sockets — notably the OSC UDP `recv_start` handler in
+  `core/osc.lua`. Calling nvim API directly there raises
+  `E5560: ... must not be called in a fast event context`. Prefer deferring the
+  whole handler body with `vim.schedule` rather than only the notify calls.
 - Style: `stylua.toml` (2-space indent, 120 col width).
 - LuaFmt/luacheck globals and ignores are declared in `.luacheckrc` (module-level
   forward references in `core/taptempo.lua` are declared there).

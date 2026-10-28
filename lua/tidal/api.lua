@@ -15,11 +15,15 @@ end
 local function enqueue_playhead(start_pos, finish_pos, text)
   local bufnr = vim.api.nvim_get_current_buf()
   local orbit = text and parse_orbit(text)
+  vim.schedule(function()
+  end)
   if config.options.playhead.enabled then
     require("tidal.core.playhead").enqueue(bufnr, finish_pos[1], finish_pos[1], orbit)
   end
   if config.options.event_highlight.enabled and orbit then
-    require("tidal.core.event_highlight").track(bufnr, finish_pos[1], orbit)
+    vim.schedule(function()
+    end)
+    require("tidal.core.event_highlight").track(bufnr, finish_pos[1], orbit, text)
   end
 end
 

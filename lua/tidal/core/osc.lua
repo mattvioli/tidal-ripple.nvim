@@ -6,66 +6,87 @@ local ctrl = require("tidal.core.ctrl")
 
 local M = {}
 
+-- Parse a /dirt/play OSC message.
+-- SuperDirt (SuperDOSC) sends:
+--   [1] = orbit (int, e.g. 1 = d1)
+--   [2] = "cps"        -> [3] = cps value (float)
+--   [4] = "cycle"     -> [5] = cycle value (float)
+--   [6] = "delta"     -> [7] = delta value (float)
+--   [8] = "s"         -> [9] = sound name (string)
+--   [10] = "n"        -> [11] = sample index (int)
+--   ... plus other key-value pairs
+--
+-- In the raw OSC table from Packet.unpack, the orbit ends up at msg[1] (unkeyed)
+-- and key-value pairs start at msg[2].
+--
+-- But we've also seen the "visualizer target" format where orbit is at [7]
+-- and everything starts as [1] = "_id_", [2] = orbit_string.
+--
+-- Strategy: Try _id_ key first (visualizer format), then _id (no underscore),
+-- then try msg[1] if it's a number (SuperDOSC format), then try msg[7] (old format).
 local function parse_dirt_play(msg)
-  if #msg < 4 then
+  if msg.address ~= "/dirt/play" then
     return nil
   end
 
-  local result = {
-    orbit = tonumber(msg[2]),
-  }
+  local result = {}
 
-  for i = 3, #msg - 1, 2 do
+  for i = 1, #msg - 1, 2 do
     local key = msg[i]
     local val = msg[i + 1]
-    if type(key) == "string" then
-      if key == "cps" then
-        result.cps = tonumber(val)
-      elseif key == "cycle" then
-        result.cycle = tonumber(val)
-      elseif key == "delta" then
-        result.delta = tonumber(val)
-      elseif key == "s" then
-        result.sound = val
-      elseif key == "n" then
-        result.n = tonumber(val)
+    if type(key) ~= "string" then
+      -- Unkeyed value at odd index — could be orbit in some OSC formats
+      if i == 1 then
+        result.orbit = tonumber(key)
       end
+    elseif key == "_id_" or key == "_id" then
+      local orbit_val = tonumber(val)
+      if orbit_val ~= nil then
+        result.orbit = orbit_val
+      end
+    elseif key == "orbit" then
+      result.orbit = tonumber(val)
+    elseif key == "cps" then
+      result.cps = tonumber(val)
+    elseif key == "cycle" then
+      result.cycle = tonumber(val)
+    elseif key == "delta" then
+      result.delta = tonumber(val)
+    elseif key == "s" then
+      result.sound = val
+    elseif key == "n" then
+      result.n = tonumber(val)
+    end
+  end
+
+  -- Fallback: check msg[7] (old SuperDirt format where orbit is at index 7)
+  if result.orbit == nil and #msg >= 7 then
+    local seventh = msg[7]
+    if type(seventh) ~= "string" then
+      result.orbit = tonumber(seventh)
+    end
+  end
+
+  -- Final fallback: _id_ without trailing underscore
+  if result.orbit == nil and #msg >= 2 then
+    local first = msg[1]
+    if type(first) == "string" and first == "_id" then
+      result.orbit = tonumber(msg[2])
     end
   end
 
   return result
 end
 
-local function dispatch(msg)
-  if msg.address == "/ctrl" then
-    ctrl.dispatch(msg)
-    return
-  end
-
-  if msg.address ~= "/dirt/play" then
-    return
-  end
+--- Called via vim.schedule_wrap from on_read.
+--- Sends OSC events downstream: playhead, event_highlight, visualizer.
+local function on_dirt_play(msg)
   local parsed = parse_dirt_play(msg)
   if not parsed then
     return
   end
 
-  if config.options.osc.debug then
-    vim.schedule(function()
-      vim.notify(
-        string.format(
-          "OSC /dirt/play: sound=%s n=%s cycle=%s cps=%s orbit=%s delta=%s",
-          vim.inspect(parsed.sound),
-          vim.inspect(parsed.n),
-          vim.inspect(parsed.cycle),
-          vim.inspect(parsed.cps),
-          vim.inspect(parsed.orbit),
-          vim.inspect(parsed.delta)
-        ),
-        vim.log.levels.DEBUG
-      )
-    end)
-  end
+
 
   state.current_cps = parsed.cps
   state.current_cycle = parsed.cycle
@@ -83,6 +104,21 @@ local function dispatch(msg)
   end
 end
 
+local scheduled_on_dirt_play = vim.schedule_wrap(on_dirt_play)
+
+local scheduled_dispatch = vim.schedule_wrap(function(msg)
+  if msg.address == "/ctrl" then
+    ctrl.dispatch(msg)
+    return
+  end
+
+  if msg.address ~= "/dirt/play" then
+    return
+  end
+
+  scheduled_on_dirt_play(msg)
+end)
+
 local function on_read(err, data)
   if err or not data or #data == 0 then
     return
@@ -95,10 +131,10 @@ local function on_read(err, data)
 
   if result.timetag then
     for _, elem in ipairs(result) do
-      dispatch(elem)
+      scheduled_dispatch(elem)
     end
   else
-    dispatch(result)
+    scheduled_dispatch(result)
   end
 end
 

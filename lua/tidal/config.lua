@@ -70,13 +70,14 @@ local defaults = {
     port = 5050,
     tidal_port = 6010,
     enabled = true,
-    debug = false,
-    ctrl_debug = false,
+    debug = true,
+    ctrl_debug = true,
   },
   event_highlight = {
     enabled = true,
     highlight = { link = "TidalRippleEvent" },
     fade_ms = 400,
+    debug = true,
   },
   playhead = {
     enabled = true,
@@ -144,7 +145,11 @@ M.playhead_ns = vim.api.nvim_create_namespace("TidalRipplePlayhead")
 
 vim.api.nvim_set_hl(0, "TidalRipplePlayhead", { link = "CursorLine" })
 vim.api.nvim_set_hl(0, "TidalRippleFlash", { link = "Search" })
-vim.api.nvim_set_hl(0, "TidalRippleEvent", { link = "IncSearch" })
+vim.api.nvim_set_hl(
+  0,
+  "TidalRippleEvent",
+  { bg = "#ff0000", fg = "#ffff00", bold = true, nocombine = true, reverse = true }
+)
 
 function M.setup(options)
   M.options = vim.tbl_deep_extend("force", {}, defaults, options or {})
